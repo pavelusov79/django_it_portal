@@ -1,0 +1,84 @@
+{% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block content %}
+{% if user.is_authenticated and user.employer %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col">
+            <p class="h4 font-italic">Добро пожаловать {{user.employer.company_name}} на портал IT
+                Recrut!</p>
+            <p>Статус: Работодатель</p>
+            <p class="my-5">Здесь будет выведен список всех доступных резюме соискателей,
+            зарегистрированных на данном портале.</p>
+            <p class="my-5">Также будет реализован простой и расширенный поиск резюме.</p>
+        </div>
+    </div>
+</div>
+{% elif user.is_authenticated and user.seeker %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col">
+            <p class="h4 font-italic">Добро пожаловать {{user.first_name}} {{ user.last_name }}
+                {{ user.seeker.patronimyc }} на портал IT Recrut!</p>
+            <p>Статус: Соискатель</p>
+            <p class="my-5">Здесь будет выведен список всех доступных вакансий
+                компаний-работодателей, зарегистрированных на данном портале</p>
+            <p class="my-5">Также будет реализован простой и расширенный поиск вакансий.</p>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col col-sm-8 col-md-9 about_h1">
+            <h1 class="text-center mb-3">Добро пожаловать на портал IT Recrut</h1>
+            <p class="text-center about-text">Портал IT Recrut является крупнейшим порталом по
+                подбору персонала для специалистов IT сферы. Создан с целью помочь соискателям
+                найти свою работы мечты в IT отрасли, а работодателям подобрать себе в штат
+                квалифицированный персонал.</p>
+            <p class="text-center about-text my-2">Для пользования всеми возможностями портала
+                необходимо сперва пройти регистрацию.
+            В шапке главной страницы есть две ссылки- регистрация для работодателя и регистрация
+            для соискателя.</p>
+            <p class="text-center about-text">После прохождения регистрации пользователям в
+                зависимости от их статуса будут доступны такие возможности как просмотр вакансий
+            или резюме, возможность разместить вакансии или резюме, работа с личным кабинетом и
+                многое другое.</p>
+        </div>
+        <div class="col col-sm-4 col-md-3 news_col">
+            <h5 class="text-center mt-2 font-italic" style="color: #808000;">Вход для
+                зарегистрированных пользователей</h5>
+            <form class="w-100" action="{% url 'auth:login' %}" method="post">
+                {% csrf_token %}
+                {{ login_form.as_p }}
+                <br>
+                <input class="btn btn-primary form-control mb-5" type="submit"
+                       value="войти на портал">
+            </form>
+            <h5 class="text-center my-3 font-italic" style="color: #808000;">Последние новости</h5>
+            {% for item in news %}
+            <div class="pl-3 mb-3">{{ item.published|date:"d.m.y" }}  <span> {{ item.title}} </span>
+                <a href="{% url 'news_detail' item.pk%}"><small class="text-muted">
+                подробнее...</small></a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <h3 class="text-center mt-5">Компании партнеры</h3>
+    <div class="row justify-content-center mt-3">
+        {% for item in employers %}
+        <div class="col-6 col-sm-3 col-lg-2">
+            <div class="card">
+                <img class="card-img-top" style="height:100px; width:cover;"
+                     src="/media/{{ item.logo }}" alt="Card image cap">
+                <div class="card-body">
+                    <p class="card-text text-center font-italic">{{ item.company_name }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

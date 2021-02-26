@@ -1,0 +1,24 @@
+{% extends 'mainapp/base.html' %}
+{% load static %}
+{% block title %}
+<title>News#{{title}}</title>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <nav class="mx-5 mb-5" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a class='text-muted' style="font-size:1rem;"
+                                               href="{% url 'news' %}">News</a></li>
+            <li class="breadcrumb-item active" aria-current="page">News#{{title}}</li>
+        </ol>
+    </nav>
+    <div class="row mb-3">
+        <div class="col-2 h5">{{ one_news.published|date:"d.m.y" }}</div>
+        <div class="col-10 h5">{{ one_news.title|title }}</div>
+    </div>
+    <div class="row mb-5">
+        <div class="col">{{ one_news.description }}</div>
+    </div>
+</div>
+{% endblock %}

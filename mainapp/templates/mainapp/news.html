@@ -1,0 +1,17 @@
+{% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="mb-4 text-center font-italic">Новости портала</h1>
+    {% for item in news %}
+    <div class="row mb-3" id="{{ item.id }}">
+        <div class="col-2 h5">{{ item.published|date:"d.m.y" }}</div>
+        <div class="col-10 h5">{{ item.title|title }}</div>
+    </div>
+    <div class="row mb-5">
+        <div class="col">{{ item.description }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
