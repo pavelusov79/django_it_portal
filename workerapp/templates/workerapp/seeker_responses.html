@@ -1,0 +1,39 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ seeker.user.first_name }}
+        {{ seeker.user.last_name }} {{ seeker.patronimyc }} </h3>
+    <div class="row justify-content-center">
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'workerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <h5 class="font-italic mb-3">Отклики от работодателей по моим резюме:</h5>
+            {% if responses %}
+                {% for item in responses %}
+                    <p class="mb-0"><span class="font-weight-bold mb-0">{{ item.date|date:"d.m.Y" }}</span>
+                    На резюме <a href="{% url 'worker:published' seeker.pk %}">{{ item.resume.position }}</a>
+                        поступило предложение по вакансии: <b>{{ item.vacancy.vacancy_name }} (компания: {{ item.vacancy.employer.company_name }})</b>
+                    </p>
+            <p class="mb-0"><span class="font-weight-bold">Статус:</span> <span id="status{{ item.vacancy.pk }}">{{ item.get_status_display }}</span></p>
+                    {% if item.cover_letter %}
+                        <p class="mb-0"> {{ item.cover_letter|linebreaks|truncatewords:40 }} Контактное лицо: {{ item.vacancy.contact_person }}</p>
+                    {% else %}
+                        <p class="mb-0">Нас заинтерсовало ваше резюме. Направляем вам предложение по нашей вакансии. В случае ответной
+                        заинтересованности просим с нами связаться. Контактное лицо: {{ item.vacancy.contact_person }}.</p>
+                    {% endif %}
+                    {% if item.contact_phone %}
+                        <p class="mb-0">Контактный телефон: {{ item.contact_phone }}</p>
+                    {% endif %}
+            <p class="mb-4"><a class="see_vacancy" id="{{ item.vacancy.pk }}" data-url="{% url 'employer:offer_ajax' %}" href="{% url 'employer:vacancy_view' item.vacancy.employer.pk item.vacancy.pk %}"><b>Просмотреть предложенную вакансию.</b></a></p>
+                {% endfor %}
+            {% else %}
+                <p>Откликов ещё нет</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

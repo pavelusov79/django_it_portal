@@ -3,24 +3,78 @@
 
 {% block content %}
 <div class="container my-5">
-    <h1 class="font-italic mb-4 text-center">Личный кабинет: {{ user.first_name }}
-        {{ user.last_name }} {{ user.seeker.patronimyc }}
-    </h1>
-    <div class="row">
-        <div class="col">
-            <p>Здесь будет размещен весь контент личного кабинета</p>
-            <p>Создание резюме. При создании будет уведомление что резюме отправлено
-                модератору портала на согласование. После согласования резюме соискателя будет
-                опубликована модератором. Соискателю придет сообщение в личный кабинет, что
-                резюме успешно размещено на портале.</p>
-            <p>Сохранение черновика резюме</p>
-            <p>Просмотр опубликованных резюме</p>
-            <p>Редактирование и удаление резюме</p>
-            <p>Чтение сообщений от администратора</p>
-            <p>Просмотр избранных вакансий</p>
-            <p>Возможность направить отклик избранным вакансиям</p>
-            <p></p>
+    <h3 class="font-italic mb-4 text-center">Личный кабинет: {{ seeker.user.first_name }}
+        {{ seeker.user.last_name }} {{ seeker.patronimyc }}
+    </h3>
+    <div class="row justify-content-center">
+        {% if seeker.status == 'moderation_ok' %}
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'workerapp/include/menu.html' %}
         </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Поле</th>
+                    <th scope="col">Данные</th>
+                </tr>
+                <tr>
+                    <td scope="col">Фото</td>
+                    <td scope="col">{% if seeker.photo %}<img style="height: 90px;"
+                                                              src="/media/{{ seeker.photo }}"
+                                                              alt="#">{% else %}фото не загружено{% endif %}</td>
+                </tr>
+                <tr>
+                    <td scope="col">ФИО</td>
+                    <td scope="col">{{ seeker.user.first_name }} {{ seeker.user.last_name }}
+                        {{ seeker.patronimyc }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Возраст</td>
+                    <td scope="col">{{ seeker.age }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Телeфон</td>
+                    <td scope="col">{{ seeker.tel }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Город</td>
+                    <td scope="col">{{ seeker.city }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Email</td>
+                    <td scope="col">{{ seeker.user.email }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Семейное положение</td>
+                    <td scope="col">{{ seeker.get_married_display }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Статус</td>
+                    <td scope="col">{{ seeker.get_status_display }}</td>
+                </tr>
+                </thead>
+            </table>
+            <div class="d-flex">
+                <a class="my-4 px-3 btn btn-outline-primary" role="button"
+                   href="{% url 'auth:edit_seeker' %}">редактировать
+                    профиль</a>
+                <a class="btn btn-outline-success my-4 ml-4 px-3" role="button"
+                   href="{% url 'auth:change_password' %}">сменить пароль</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <p class="text-center">Ваш профиль отправлен на постмодерацию модератору портала. После
+                прохождения модерации вам будет доступна вся функциональность портала,  включая размещение
+                резюме на портале, добавление вакансий в избранное, направление откликов
+                по вакансиям работодателей. При одобрении модератором портала данных вашего профиля
+                вам на вашу почту придет уведомление об успешной модерации. В случае отказа в прохождении
+                модерации вам также будет направлено письмо с причинмами отказа. В случае отказа
+                вы можете снова отредактировать свой профиль с учетом замечаний.
+            </p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

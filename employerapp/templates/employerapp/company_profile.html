@@ -1,0 +1,39 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="row">
+    <div class="col-3 col-lg-2">
+      {% if employer.logo %}
+      <img class="card-img" src="/media/{{ employer.logo }}" alt="лого {{ employer.company_name }}">
+      {% else %}
+        <p class="card_img">Лого не загружено</p>
+      {% endif %}
+    </div>
+    <div class="col-9 col-lg-10">
+      <p class="h4" style="color:#007bff;">{{ employer.company_name }}</p>
+      <p class="text-muted mb-0">{{ employer.city }}</p>
+      <p class="text-muted mb-0">{{ employer.tel }}</p>
+      <p class="text-muted mb-0">{{ employer.user.email }}</p>
+      {% if employer.web %}<a class="mb-0" href="https://{{ employer.web }}">{{ employer.web }}</a>{% endif %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-10">
+      <p class="mt-5">{{ employer.short_description|linebreaks }}</p>
+      {% if user.seeker %}
+        {% if vacancies %}
+          <p>Активные вакансии компании ({{ vacancies|length }}):</p>
+          {% for item in vacancies %}
+            <p><a class="mb-0" href="{% url 'employer:vacancy_view' item.employer.pk item.pk %}">{{ item.vacancy_name }} ({{ item.city }})</a></p>
+          {% endfor %}
+        {% endif %}
+      {% else %}
+      <p>Для просмотра списка активных вакансий компании вам необходимо пройти <a href="{% url 'main' %}">авторизацию</a> на портале.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

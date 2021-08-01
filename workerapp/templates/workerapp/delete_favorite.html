@@ -1,0 +1,19 @@
+{% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container my-5">
+        Уверены, что хотите удалить из избранного вакансию <strong>{{ favorite.vacancy.vacancy_name }}</strong>?
+        <div class="row mt-3 mb-5">
+            <div class="col col-sm-6 d-flex">
+                <form action="{% url 'worker:delete_favorite' seeker.pk favorite.pk %}"
+                      method="post">
+                    {% csrf_token %}
+                    <input class="btn btn-outline-danger mr-5" type="submit" value="удалить">
+                </form>
+                <a class="btn btn-outline-success" role="button"
+                   href="{% url 'worker:favorites' seeker.pk %}">отмена</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

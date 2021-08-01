@@ -1,0 +1,57 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ employer.company_name }} </h3>
+    <div class="row justify-content-around">
+        <div class="col-5 col-sm-4 col-md-3 pr-4 mb-5">
+            {% include 'employerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            {% if favorites %}
+            <h5 class="mb-4 font-italic">Избранные резюме:</h5>
+            {% for item in favorites %}
+            <p class="font-italic small font-weight-bold">Добавлено в избранное: {{ item.date|date:'d.m.Y.' }}</p>
+            <div class="d-flex">
+                <h4 class="pl-0 col-7" style="color: blue;">
+                    <a href="{% url 'worker:resume_view' item.resume.seeker.pk item.resume.pk %}">{{ item.resume.position }}</a></h4>
+                <p class="h5 ml-5" style="color:black;">Уровень з/п:
+                    {% if item.resume.min_salary and item.resume.max_salary %}{{ item.resume.min_salary }} - {{ item.resume.max_salary }} {{ item.resume.currency }}
+                    {% elif item.resume.min_salary %} от {{ item.resume.min_salary }} {{ item.resume.currency }}
+                    {% elif item.resume.max_salary %} до {{ item.resume.max_salary }} {{ item.resume.currency }}
+                    {% else %} не указана
+                    {% endif %}
+                </p>
+            </div>
+            <p class="mb-0"><a href="{% url 'worker:seeker_profile' item.resume.seeker.pk %}">{{ item.resume.seeker.user.first_name }}
+                    {{ item.resume.seeker.user.last_name }} {{ item.resume.seeker.patronimyc }}</a></p>
+            <p class="small text-muted mb-0">{{ item.resume.seeker.city }}</p>
+            <div class="d-flex pl-0 col-12 col-sm-7 justify-content-between mb-0">
+                <p class="text-muted mb-0">Возраст: {{ item.resume.seeker.age }}</p>
+                <p class="text-muted mb-0">Семейный статус: {{ item.resume.seeker.get_married_display }}</p>
+            </div>
+            <div class="d-flex pl-0 col-12 col-sm-7 justify-content-between">
+                <p class="text-muted">тел: {{ item.resume.seeker.tel }}</p>
+                <p class="text-muted">email: {{ item.resume.seeker.user.email }}</p>
+            </div>
+            <p><span class="font-weight-bold">Навыки:</span> {{ item.resume.skills|linebreaks|truncatewords:30 }}</p>
+            <p>Дата публикации: {{item.resume.published|date:"d.m.Y" }}</p>
+            <div class="d-flex mb-5">
+                <a class="btn btn-outline-primary" role="button"
+                   href="{% url 'employer:delete_favorite' employer.pk item.pk %}">
+                    Удалить из избранного</a>
+                <a class="btn btn-outline-primary px-4 ml-5" role="button"
+                   href="{% url 'employer:send_offer' item.employer.pk item.resume.pk %}">Направить
+                    предложение
+                </a>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-center">У вас еще нет ни одного избранного резюме.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -4,49 +4,231 @@
 {% block content %}
 {% if user.is_authenticated and user.employer %}
 <div class="container my-5">
-    <div class="row">
-        <div class="col">
+    <div class="row justify-content-center">
+        <div class="col-12">
             <p class="h4 font-italic">Добро пожаловать {{user.employer.company_name}} на портал IT
                 Recrut!</p>
             <p>Статус: Работодатель</p>
-            <p class="my-5">Здесь будет выведен список всех доступных резюме соискателей,
-            зарегистрированных на данном портале.</p>
-            <p class="my-5">Также будет реализован простой и расширенный поиск резюме.</p>
+            <form action="{% url 'employerapp:search_resume' user.employer.pk %}"
+                  class="mb-5 search-form" method="get">
+                <div class="new">
+                    <label class="pl-0 col-3" for="search">Ключевые слова</label>
+                    <input id="search" type="text" class="col-8 col-sm-6 col-md-4 form-control d-inline"
+                           name="search" placeholder="должность или навык...">
+                    <span title="расширенный поиск"><svg xmlns="http://www.w3.org/2000/svg" width="16"
+                         height="16" fill="currentColor" class="bi bi-sliders" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3h9.05zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8h2.05zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1h9.05z"/>
+                    </svg></span>
+                    <div class="extend my-3">
+                        <label class="pl-0 col-3" for="city">Город</label>
+                        <input class="mb-3 col-8 col-sm-6 col-md-4 form-control d-inline"
+                               type="text" name="city" id="city"><br>
+                        <label class="pl-0 col-3" for="gender">Выберите пол</label>
+                        <select name="gender" id="gender"
+                                class="mb-3 col-8 col-sm-6 col-md-4 form-control d-inline">
+                            <option>------</option>
+                            <option value="male">мужской</option>
+                            <option value="female">женский</option>
+                        </select><br>
+                        <div class="d-flex pl-0 col-10 col-sm-8 col-md-6">
+                            <label class="mb-3 col-4 col-sm-6 pl-0 mr-1" for="salary">Уровень дохода
+                                от</label>
+                            <input type="number" name="salary" id="salary"
+                                   class="mb-3 ml-2 form-control d-inline col-5">
+                            <select name="currency" id=""
+                                    class="ml-3 col-3 form-control d-inline">
+                                <option>-----</option>
+                                <option value="руб.">RUB</option>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
+                        <div class="d-flex pl-0">
+                            <span class="col-3 px-0 col-form-label">Объявления за
+                                период от
+                            </span><input
+                                class="ml-1 form-control d-inline px-1 col-3 col-sm-2" type="date"
+                                name="from_date" id="from_date">
+                            <span class="px-3 col-form-label">до</span><input
+                                class="form-control d-inline px-1 col-3 col-sm-2" type="date"
+                                name="till_date" id="till_date">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary px-4 button-search" type="submit">поиск
+                    </button>
+                </div>
+            </form>
+            {% for item in resume %}
+            <div class="mb-5">
+                <div class="d-flex">
+                    <h4 style="color: blue;"><a href="{% url 'worker:resume_view' item.seeker.pk item.pk %}">{{ item.position }}</a></h4>
+                    <p class="ml-5">
+                    {% if item.is_favorite %}
+                        <svg id="{{ item.pk }}" data-url="{% url 'favorites_ajax' %}" style="color: #007bff;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-star-fill" viewBox="0 0 16 16">
+                        <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                        </svg>
+                    {% else %}
+                        <svg id="{{ item.pk }}" data-url="{% url 'favorites_ajax' %}" style="color: #007bff;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-star" viewBox="0 0 16 16">
+                        <path d="M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.523-3.356c.329-.314.158-.888-.283-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767l-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288l1.847-3.658 1.846 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.564.564 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z"/>
+                        </svg>
+                    {% endif %}
+                    </p>
+                    <p class="h5 ml-5" style="color:black;">Желаемый уровень з/п:
+                        {% if item.min_salary and item.max_salary %}{{ item.min_salary }} -
+                        {{ item.max_salary }} {{ item.currency }}
+                        {% elif item.min_salary %} от {{ item.min_salary }} {{ item.currency }}
+                        {% elif item.max_salary %} до {{ item.max_salary }} {{ item.currency }}
+                        {% else %} не указана
+                        {% endif %}
+                    </p>
+                </div>
+                <p class="mb-0"><a href="{% url 'worker:seeker_profile' item.seeker.pk %}">{{ item.seeker.user.first_name }}
+                    {{ item.seeker.user.last_name }} {{ item.seeker.patronimyc }}</a></p>
+                <p class="small text-muted mb-0">{{ item.seeker.city }}</p>
+                <div class="d-flex pl-0 col-12 col-sm-7 justify-content-between mb-0">
+                    <p class="text-muted mb-0">Возраст: {{ item.seeker.age }}</p>
+                    <p class="text-muted mb-0">Семейный статус: {{ item.seeker.get_married_display }}</p>
+                </div>
+                <div class="d-flex pl-0 col-12 col-sm-7 justify-content-between">
+                    <p class="text-muted">тел: {{ item.seeker.tel }}</p>
+                    <p class="text-muted">email: {{ item.seeker.user.email }}</p>
+                </div>
+                <!--<p><span class="font-weight-bold">Желаемая должность:</span> {{ item.position }}</p>-->
+                <p><span class="font-weight-bold">Навыки:</span> {{ item.skills|linebreaks|truncatewords:30 }}</p>
+                <p>Дата публикации: {{item.published|date:"d.m.Y" }}</p>
+                <div class="mt-4 d-flex">
+                    <a class="btn btn-outline-primary px-4" role="button" href="{% url 'worker:resume_view' item.seeker.pk item.pk %}">Подробнее
+                    </a>
+                    <a class="btn btn-outline-primary px-4 ml-5" role="button" href="{% url 'employer:send_offer' user.employer.pk item.pk %}">Направить предложение</a>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 {% elif user.is_authenticated and user.seeker %}
 <div class="container my-5">
-    <div class="row">
-        <div class="col">
+    <div class="row justify-content-center">
+        <div class="col-12">
             <p class="h4 font-italic">Добро пожаловать {{user.first_name}} {{ user.last_name }}
                 {{ user.seeker.patronimyc }} на портал IT Recrut!</p>
             <p>Статус: Соискатель</p>
-            <p class="my-5">Здесь будет выведен список всех доступных вакансий
-                компаний-работодателей, зарегистрированных на данном портале</p>
-            <p class="my-5">Также будет реализован простой и расширенный поиск вакансий.</p>
+            <form action="{% url 'worker:search_vacancy' user.seeker.pk %}" method="get" class="mb-5">
+                <div class="new">
+                    <label class="pl-0 col-3" for="search_vacancy">Ключевые слова</label>
+                    <input id="search_vacancy" type="text" class="col-8 col-sm-6 col-md-4 form-control d-inline"
+                           name="search_vacancy" placeholder="название вакансии или навык...">
+                    <span title="расширенный поиск"><svg xmlns="http://www.w3.org/2000/svg" width="16"
+                         height="16" fill="currentColor" class="bi bi-sliders" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3h9.05zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8h2.05zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1h9.05z"/>
+                    </svg></span>
+                    <div class="extend my-3">
+                        <label class="pl-0 col-3" for="company">Название компании</label>
+                        <input class="mb-3 col-8 col-sm-6 col-md-4 form-control d-inline"
+                               type="text" name="company" id="company"><br>
+                        <label class="pl-0 col-3" for="city_vacancy">Город</label>
+                        <input class="mb-3 col-8 col-sm-6 col-md-4 form-control d-inline"
+                               type="text" name="city_vacancy" id="city_vacancy"><br>
+                        <label class="pl-0 col-3" for="type">Тип занятости</label>
+                        <select name="type" id="type"
+                                class="mb-3 col-8 col-sm-6 col-md-4 form-control d-inline">
+                            <option>------</option>
+                            <option value="полная занятость">полная занятость</option>
+                            <option value="частичная занятость">частичная занятость</option>
+                            <option value="занятость по проекту">занятость по проекту</option>
+                            <option value="удаленная работа">удаленная работа</option>
+                        </select><br>
+                        <div class="d-flex pl-0 col-10 col-sm-8 col-md-6">
+                            <label class="mb-3 col-4 col-sm-6 pl-0 mr-1" for="salary_level">Уровень дохода
+                                от</label>
+                            <input type="number" name="salary_level" id="salary_level"
+                                   class="mb-3 ml-2 form-control d-inline col-5">
+                            <select name="currency" id="#"
+                                    class="ml-3 col-3 form-control d-inline">
+                                <option>-----</option>
+                                <option value="руб.">RUB</option>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                            </select>
+                        </div>
+                        <div class="d-flex pl-0">
+                            <span class="col-3 px-0 col-form-label">Объявления за
+                                период от
+                            </span><input
+                                class="ml-1 form-control d-inline px-1 col-3 col-sm-2" type="date"
+                                name="published_from" id="published_from">
+                            <span class="px-3 col-form-label">до</span><input
+                                class="form-control d-inline px-1 col-3 col-sm-2" type="date"
+                                name="published_till" id="published_till">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary px-4 button-search" type="submit">поиск
+                    </button>
+                </div>
+            </form>
+            {% for vacancy in vacancies %}
+            <div class="mb-5">
+                <div class="d-flex">
+                    <h4 style="color: blue;"><a href="{% url 'employer:vacancy_view' vacancy.employer.pk vacancy.pk %}">{{ vacancy.vacancy_name }}</a></h4>
+                    <p class="ml-5">
+                        {% if vacancy.is_favorite %}
+                        <svg id="{{ vacancy.pk }}" data-url="{% url 'favorites_vacancies_ajax' %}" style="color: #007bff;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             class="bi bi-star-fill" viewBox="0 0 16 16">
+                        <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z"/>
+                        </svg>
+                        {% else %}
+                        <svg id="{{ vacancy.pk }}" data-url="{% url 'favorites_vacancies_ajax' %}" style="color: #007bff;" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-star" viewBox="0 0 16 16">
+                          <path d="M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.523-3.356c.329-.314.158-.888-.283-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767l-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288l1.847-3.658 1.846 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.564.564 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z"/>
+                        </svg>
+                        {% endif %}
+                    </p>
+                    <p class="h5 ml-5" style="color:black;">Уровень з/п:
+                        {% if vacancy.min_salary and vacancy.max_salary %}{{ vacancy.min_salary }} -
+                        {{ vacancy.max_salary }} {{ vacancy.currency }}
+                        {% elif vacancy.min_salary %} от {{ vacancy.min_salary }} {{ vacancy.currency }}
+                        {% elif vacancy.max_salary %} до {{ vacancy.max_salary }} {{ vacancy.currency }}
+                        {% else %} не указана
+                        {% endif %}
+                    </p>
+                </div>
+                <p class="small text-muted mb-0">{{ vacancy.city }} / {{ vacancy.vacancy_type }}</p>
+                <p class="mb-3"><a href="{% url 'employer:company_profile' vacancy.employer.pk %}">{{vacancy.employer.company_name}}</a>
+                    <span class="mb-3 ml-5">{% if vacancy.employer.web %}<a class="small" href="">{{vacancy.employer.web }}</a>{% endif %}</span>
+                </p>
+                <p class="font-weight-bold mb-0">Описание вакансии:</p>
+                <p class="mt-0">{{ vacancy.description|linebreaks|truncatewords:30 }}</p>
+                <p>Дата публикации: {{vacancy.published|date:"d.m.Y" }}</p>
+                <div class="mt-4 d-flex">
+                    <a class="btn btn-outline-primary px-4" role="button" href="{% url 'employer:vacancy_view' vacancy.employer.pk vacancy.pk %}">Подробнее
+                    </a>
+                    <a class="btn btn-outline-primary px-4 ml-5" role="button" href="{% url 'worker:send_response' user.seeker.id vacancy.pk %}">Откликнуться
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 {% else %}
 <div class="container my-5">
     <div class="row justify-content-center">
-        <div class="col col-sm-8 col-md-9 about_h1">
-            <h1 class="text-center mb-3">Добро пожаловать на портал IT Recrut</h1>
-            <p class="text-center about-text">Портал IT Recrut является крупнейшим порталом по
-                подбору персонала для специалистов IT сферы. Создан с целью помочь соискателям
+        <div class="col-12 col-sm-8 col-md-9 about_h1 mb-xs-4">
+            <h1 class="text-center font-italic mb-4">Добро пожаловать на портал IT Recrut</h1>
+            <p style="letter-spacing:0.2px; word-spacing:1.5px;" class="text-center">Портал IT Recrut является крупнейшим порталом по подбору персонала для специалистов IT сферы. Создан с целью помочь соискателям
                 найти свою работы мечты в IT отрасли, а работодателям подобрать себе в штат
                 квалифицированный персонал.</p>
-            <p class="text-center about-text my-2">Для пользования всеми возможностями портала
+            <p style="letter-spacing:0.2px; word-spacing:1.5px;" class="text-center my-2">Для пользования всеми возможностями портала
                 необходимо сперва пройти регистрацию.
-            В шапке главной страницы есть две ссылки- регистрация для работодателя и регистрация
-            для соискателя.</p>
-            <p class="text-center about-text">После прохождения регистрации пользователям в
-                зависимости от их статуса будут доступны такие возможности как просмотр вакансий
+                В шапке главной страницы есть две ссылки - <a href="{% url 'auth:register' %}">регистрация для работодателя</a>
+                и <a href="{% url 'auth:register_seeker' %}">регистрация для соискателя</a>.</p>
+            <p style="letter-spacing:0.2px; word-spacing:1.5px;" class="text-center">После прохождения регистрации пользователям в
+                зависимости от их статуса и после прохождения модерации профиля будут доступны такие возможности как просмотр вакансий
             или резюме, возможность разместить вакансии или резюме, работа с личным кабинетом и
                 многое другое.</p>
         </div>
-        <div class="col col-sm-4 col-md-3 news_col">
+        <div class="col-7 col-sm-4 col-md-3 news_col">
             <h5 class="text-center mt-2 font-italic" style="color: #808000;">Вход для
                 зарегистрированных пользователей</h5>
             <form class="w-100" action="{% url 'auth:login' %}" method="post">
@@ -73,7 +255,7 @@
                 <img class="card-img-top" style="height:100px; width:cover;"
                      src="/media/{{ item.logo }}" alt="Card image cap">
                 <div class="card-body">
-                    <p class="card-text text-center font-italic">{{ item.company_name }}</p>
+                    <p class="card-text text-center font-italic" style="height: 3rem;"><a href="{% url 'employer:company_profile' item.pk %}">{{ item.company_name }}</a></p>
                 </div>
             </div>
         </div>

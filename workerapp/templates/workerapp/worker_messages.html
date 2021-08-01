@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ seeker.user.first_name }}
+        {{ seeker.user.last_name }} {{ seeker.patronimyc }} </h3>
+    <div class="row justify-content-center">
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'workerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <h5 class="font-italic mb-3">Сообщения с портала IT Recrut:</h5>
+            {% if resumes_all %}
+            {% for resume in resumes_all %}
+            {% if resume.action == 'moderation_ok' %}
+            <p class="font-weight-bold mb-0">{{ resume.published|date:"d.m.Y" }} Тема сообщения: от
+                администратора портала <a href="#">admin_itrecrut@mail.ru</a></p>
+            <p class="mb-0">Текст сообщения:</p>
+            <p class="mb-5">Резюме "{{ resume.position }}" успешно прошло модерацию на портале IT Recrut и размещена на
+              сайте в базе данных резюме.
+            </p>
+            {% elif resume.failed_moderation or resume.action == 'moderation_reject' %}
+            <p class="font-weight-bold mb-0">Тема сообщения: от администратора портала
+                <a href="#">admin_itrecrut@mail.ru</a></p>
+            <p class="mb-0">Текст сообщения:</p>
+            <p class="mb-5">{% if resume.failed_moderation %}По резюме - "{{ resume.position }}" {{ resume.failed_moderation|lower }}
+              <a href="{% url 'worker:resume_update' seeker.pk resume.pk %}">Отредактировать резюме</a>.
+              После редактирования оно снова будет пересмотрено модератором портала.
+                {% else %}
+                Резюме - "{{ resume.position }}" необходимо
+                <a href="{% url 'worker:resume_update' seeker.pk resume.pk %}">отредактировать</a>.
+                После редактирования рехюме снова будет пересмотрено модератором портала.{% endif %}</p>
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            <p>У вас нет ни одного сообщения.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

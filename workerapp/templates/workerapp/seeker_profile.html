@@ -1,0 +1,45 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="row">
+    <div class="col-3 col-md-2">
+      {% if seeker.photo %}
+      <img class="card-img" src="/media/{{ seeker.photo }}" alt="фото {{ seeker.user.first_name }}">
+      {% else %}
+        <p class="card_img">Фото не загружено</p>
+      {% endif %}
+    </div>
+    <div class="col-9 col-md-10 mb-5">
+        <p class="h4" style="color:#007bff;">{{ seeker.user.first_name }} {{ seeker.user.last_name }} {{ seeker.patronimyc }}</p>
+        <p class="text-muted mb-0">Возраст: {{ seeker.age }}</p>
+        <p class="text-muted mb-0">{{ seeker.city }}</p>
+        <p class="text-muted mb-0">{{ seeker.tel }}</p>
+        <p class="text-muted mb-0">{{ seeker.user.email }}</p>
+        <p class="text-muted mb-0">Семейное положение: {{ seeker.get_married_display }}</p>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-10">
+        {% if seeker.skills %}
+            <p class="mt-5 mb-0 font-weight-bold">Навыки:</p>
+            <p>{{ seeker.skills|linebreaks }}</p>
+        {% endif %}
+        {% if seeker.hobby %}
+            <p class="mb-0 font-weight-bold">Увлечения:</p>
+            <p>{{ seeker.hobby|linebreaks }}</p>
+        {% endif %}
+        {% if resumes %}
+            <p class="font-weight-bold">Активные резюме ({{ resumes|length }}):</p>
+            <div class="mb-5">
+                {% for item in resumes %}
+                    <p><a class="mb-0" href="{% url 'worker:resume_view' seeker.pk item.pk %}">{{ item.position }} ({{ item.seeker.city }})</a></p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

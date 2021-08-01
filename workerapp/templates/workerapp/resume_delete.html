@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+{% extends 'mainapp/base.html' %}
+{% load static %}
+
+
+{% block content %}
+    <div class="container my-5">
+        {% if not resume_delete.hide %}
+            Уверены, что хотите удалить резюме <strong>{{ resume_delete.position }}</strong>?
+        {% else %}
+            Уверены, что хотите восстановить резюме <strong>{{ resume_delete.position }}</strong>?
+        {% endif %}
+        <div class="row mt-3 mb-5">
+            <div class="col col-sm-6 d-flex">
+                <form action="{% url 'worker:resume_delete' seeker.pk resume_delete.pk %}"
+                      method="post">
+                    {% csrf_token %}
+                    {% if not resume_delete.hide %}
+                    <input class="btn btn-outline-danger mr-5 mt-5" type="submit" value="удалить">
+                    {% else %}
+                     <input class="btn btn-outline-primary mr-5 mt-5" type="submit" value="восстановить">
+                    {% endif %}
+                </form>
+                <a class="btn btn-outline-success mt-5" role="button"
+                   href="{% url 'worker:seeker_cabinet' seeker.pk %}">отмена</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

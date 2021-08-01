@@ -1,0 +1,27 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ seeker.user.first_name }}
+        {{ seeker.user.last_name }} {{ seeker.patronimyc }} </h3>
+    <div class="row justify-content-center">
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'workerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <h5 class="font-italic mb-3">Удаленные / скрытые резюме:</h5>
+            {% if resumes_hide %}
+            {% for item in resumes_hide %}
+            {% include 'workerapp/include/resume_description.html' %}
+            <a class="btn btn-outline-primary mb-5" role="button" href="{% url 'worker:resume_delete' seeker.pk item.pk %}">
+                Восстановить</a>
+            {% endfor %}
+            {% else %}
+            <p>У вас нет ни одной скрытого/удаленного резюме.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

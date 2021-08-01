@@ -1,0 +1,26 @@
+{% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block content %}
+   <div class="container">
+       <h3 class="my-5 text-center">Уверены, что хотите удалить из резюме {{ resume.position }} запись о своем опыте работы
+           {{ experience.job_title }} в компании {{ experience.company_name }}?</h3>
+       <div class="row justify-content-center mb-5">
+           <div class="col-8 col-md-5 d-flex">
+              <form action="" method="post">
+                   {% csrf_token %}
+                   <input class="mt-4 mr-5 btn btn-outline-danger" type="submit"
+                          value="удалить">
+               </form>
+               {% if resume.action == 'draft' %}
+               <a class=" mt-4 mb-5 ml-5 btn btn-outline-primary"
+                   href="{% url 'worker:drafts' seeker.pk %}">отмена</a>
+               {% else %}
+               <a class=" mt-4 mb-5 ml-5 btn btn-outline-primary"
+                   href="{% url 'worker:published' seeker.pk %}">отмена</a>
+               {% endif %}
+           </div>
+       </div>
+
+   </div>
+{% endblock %}

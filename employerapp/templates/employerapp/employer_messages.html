@@ -1,0 +1,47 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ user.employer.company_name }} </h3>
+    <div class="row justify-content-center">
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'employerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <h5 class="font-italic mb-3">Сообщения с портала IT Recrut:</h5>
+            {% if vacancies_all %}
+            {% for vacancy in vacancies_all %}
+            {% if vacancy.action == 'moderation_ok' %}
+            <p class="font-weight-bold mb-0">{{ vacancy.published|date:"d.m.Y" }} Тема сообщения: от
+                администратора портала
+                <a href="#">admin_itrecrut@mail.ru</a></p>
+            <p class="mb-0">Текст сообщения:</p>
+            <p class="mb-5">Вакансия "{{vacancy.vacancy_name}}"
+                успешно прошла модерацию на портале IT Recrut и размещена на сайте в базе данных
+                вакансий.
+            </p>
+            {% elif vacancy.fall_moderation or vacancy.action == 'moderation_reject' %}
+            <p class="font-weight-bold mb-0">Тема сообщения: от администратора портала
+                <a href="#">admin_itrecrut@mail.ru</a></p>
+            <p class="mb-0">Текст сообщения:</p>
+            <p class="mb-5">{% if vacancy.fall_moderation %}По вакансии -
+                "{{vacancy.vacancy_name}}" {{ vacancy.fall_moderation|lower }}
+                <a href="{% url 'employer:vacancy_edit' employer.pk vacancy.pk %}">
+                    Отредактировать вакансию</a>. После редактирования она снова будет пересмотрена
+                модератором портала.
+                {% else %}
+                Вакансию - "{{vacancy.vacancy_name}}" необходимо
+                <a href="{% url 'employer:vacancy_edit' employer.pk vacancy.pk %}">
+                    отредактировать</a>.
+                После редактирования она снова будет пересмотрена модератором портала.{% endif %}</p>
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            <p>У вас нет ни одного сообщения.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,22 +3,68 @@
 
 {% block content %}
 <div class="container my-5">
-    <h1 class="font-italic mb-4 text-center">Личный кабинет: {{ user.employer.company_name }} </h1>
-    <div class="row">
-        <div class="col">
-            <p>Здесь будет размещен весь контент личного кабинета</p>
-            <p>Создание вакансий. При создании будет создано уведомление, что вакансия отправлена
-                модератору портала на согласование. После согласования вакансия будет
-                опубликована модератором. Работодателю придет сообщение в личный кабинет, что
-                вакансия успешно размещена на портале.</p>
-            <p>Сохранение черновика резюме</p>
-            <p>Просмотр опубликованных вакансий</p>
-            <p>Редактирование и удаление вакансий</p>
-            <p>Чтение сообщений от администратора</p>
-            <p>Просмотр избранных резюме</p>
-            <p>Возможность направить отклик избранным резюме</p>
-            <p></p>
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ employer.company_name }} </h3>
+    <div class="row justify-content-center">
+        {% if employer.status == 'moderation_ok' %}
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'employerapp/include/menu.html' %}
         </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">Поле</th>
+                    <th scope="col">Данные</th>
+                </tr>
+                <tr>
+                    <td scope="col">Логотип компании</td>
+                    <td scope="col">{% if employer.logo %}<img style="height: 90px;" src="/media/{{ employer.logo }}" alt="logo">{% else %}логотип не загружен{% endif %}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Название компании</td>
+                    <td scope="col">{{ employer.company_name }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Краткое описание компании</td>
+                    <td scope="col">{{ employer.short_description|truncatewords:20 }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Телeфон компнии</td>
+                    <td scope="col">{{ employer.tel }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Город</td>
+                    <td scope="col">{{ employer.city }}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Сайт</td>
+                    <td scope="col">{% if employer.web %}{{ employer.web }}{% else %}сайт не указан{% endif %}</td>
+                </tr>
+                <tr>
+                    <td scope="col">Статус</td>
+                    <td scope="col">{{ employer.get_status_display }}</td>
+                </tr>
+                </thead>
+            </table>
+            <div class="d-flex">
+                <a class="my-4 px-3 btn btn-outline-primary" role="button" href="{% url 'auth:edit' %}">редактировать
+                    профиль</a>
+                <a class="btn btn-outline-success my-4 ml-4 px-3" role="button"
+                   href="{% url 'auth:change_password' %}">сменить пароль</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <p class="text-center">Ваш профиль отправлен на постмодерацию модератору портала. После
+                прохождения модерации вам будет доступна вся функциональность портала,  включая размещение
+                вакансий на портале, добавление резюме в избранное, направление предложений
+                соискателям. При одобрении модератором портала данных вашего профиля вам на вашу
+                почту придет уведомление об успешной модерации. В случае отказа в прохождении
+                модерации вам также будет направлено письмо с причинмами отказа. В случае отказа
+                вы можете снова отредактировать свой профиль с учетом замечаний.
+            </p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

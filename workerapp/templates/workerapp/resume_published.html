@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+{% extends 'mainapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ seeker.user.first_name }}
+        {{ seeker.user.last_name }} {{ seeker.patronimyc }} </h3>
+    <div class="row justify-content-center">
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'workerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            {% if resumes %}
+            <h5 class="mb-4 font-italic">Опубликованные pезюме на портале:</h5>
+            {% for item in resumes %}
+            {% include 'workerapp/include/resume_description.html' %}
+            <div class="d-flex mb-5">
+                <a class="btn btn-outline-primary mr-5" role="button" href="{% url 'worker:resume_update' item.seeker.pk item.pk %}">
+                    Редактировать pезюме</a>
+                <a class="btn btn-outline-primary" role="button" href="{% url 'worker:resume_delete' item.seeker.pk item.pk %}">
+                    Удалить резюме</a>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p class="text-center">У вас еще нет ни одного опубликованного резюме.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

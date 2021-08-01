@@ -1,0 +1,37 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ seeker.user.first_name }}
+        {{ seeker.user.last_name }} {{ seeker.patronimyc }}</h3>
+    <div class="row justify-content-around">
+        <div class="col-5 col-sm-4 col-md-3 mb-5">
+            {% include 'workerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <h5 class="font-italic mb-3">Направленные отклики по вакансиям работодателей:</h5>
+            {% if send_resp %}
+                {% for item in send_resp %}
+                <p class="mb-0"><span class="font-weight-bold mb-0">{{ item.date|date:"d.m.Y" }}</span>
+                Направленный отклик работодателю: {{ item.vacancy.employer.company_name }} на вакансию:
+                    <a href="{% url 'employer:vacancy_view' item.vacancy.employer.pk item.vacancy.pk %}">{{ item.vacancy.vacancy_name }}</a>
+                </p>
+                <p class="mb-0 {% if item.status == 'read' %}font-weight-bold{% endif %}"><span class="font-weight-bold">Статус:</span> {{ item.get_status_display }}</p>
+                    {% if item.cover_letter %}
+                        <p class="mb-0">{{ item.cover_letter}}</p>
+                        <p class="mb-4">Контактный тел.: {{ item.resume.seeker.tel }}</p>
+                    {% else %}
+                        <p class="mb-4">Добрый день. Меня заинтересовала ваша вакансия {{ item.vacancy.vacancy_name }}. Прошу вас
+                        рассмотреть мое резюме "{{ item.resume.position }}". В случае заинтересованности прошу вас связаться
+                        со мной по тел. {{ item.resume.seeker.tel }}</p>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <p class="mb-4">У вас нет ни одного направленного отклика по размещенным вакансиям</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

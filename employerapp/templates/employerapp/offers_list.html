@@ -1,0 +1,40 @@
+{% extends 'mainapp/base.html' %}
+
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <h3 class="font-italic mb-5 text-center">Личный кабинет: {{ employer.company_name }}</h3>
+    <div class="row justify-content-center">
+        <div class="col-7 col-sm-4 col-md-3 pr-4 mb-4">
+            {% include 'employerapp/include/menu.html' %}
+        </div>
+        <div class="col-12 col-sm-8 col-md-9">
+            <h5 class="font-italic mb-3">Отклики от соискателей по моим вакансиям:</h5>
+            {% if take_offers %}
+            <div class="show_all">
+            {% for item in take_offers %}
+                <p class="mb-0"><span class="font-weight-bold mb-0">{{ item.date|date:"d.m.Y" }}</span>
+                На вакансию <a href="{% url 'employer:published' employer.pk %}">{{ item.vacancy.vacancy_name }}</a>
+                    поступил отклик от резюме: <b>{{ item.resume.position }} (соискатель {{ item.resume.seeker.user.first_name }}
+                        {{ item.resume.seeker.user.last_name }} {{ item.resume.seeker.patronimyc }})</b>
+                </p>
+                <p class="mb-0"><span class="font-weight-bold">Статус:</span> <span id="status{{ item.resume.pk }}">{{ item.get_status_display }}</span></p>
+                {% if item.cover_letter %}
+                    <p class="mb-0"> {{ item.cover_letter|linebreaks }}.</p>
+                    <p class="mt-0">Контактный тел. {{ item.resume.seeker.tel }}</p>
+                {% else %}
+                    <p class="mb-0">Добрый день. Меня заинтерсовала ваша вакансия. Направляю вам свое резюме. В случае ответной
+                    заинтересованности прошу связаться со мной по тел. {{ item.resume.seeker.tel }}.</p>
+                {% endif %}
+                <p class="mt-0 mb-4"><a class="see_resume" id="{{ item.resume.pk }}" data-url="{% url 'worker:response_ajax' %}" href="{% url 'worker:resume_view' item.resume.seeker.pk item.resume.pk %}"><b>Просмотреть направленное резюме.</b></a></p>
+            {% endfor %}
+            </div>
+            {% else %}
+                <p>Откликов по вакансиям ещё нет</p>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

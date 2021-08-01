@@ -21,14 +21,16 @@ from django.urls import path, include
 from mainapp import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls, name='admin'),
     path('', views.main, name='main'),
-    path('news/', views.news, name='news'),
+    path('news/<int:page>/', views.news, name='news'),
+    path('search_news/', views.search_news, name='search_news'),
     path('news/detail/<int:pk>', views.news_detail, name="news_detail"),
-    path('contacts/', views.contacts, name='contacts'),
     path('auth/', include('authapp.urls', namespace='auth')),
     path('employer/', include('employerapp.urls', namespace='employer')),
-    path('worker/', include('workerapp.urls', namespace='worker'))
+    path('worker/', include('workerapp.urls', namespace='worker')),
+    path('favorites_ajax/', views.add_delete_favorites, name="favorites_ajax"),
+    path('favorite_vacancies_ajax/', views.change_favorites_vacancies, name="favorites_vacancies_ajax")
 ]
 
 if settings.DEBUG:
