@@ -64,9 +64,11 @@ def news(request, page=1):
 def news_detail(request, pk):
     one_news = News.objects.get(pk=pk)
     title = one_news.pk
+    url = f'http://127.0.0.1:8000{request.path}'
     context = {
         'title': title,
-        'one_news': one_news
+        'one_news': one_news,
+        'url': url
     }
     return render(request, 'mainapp/news_detail.html', context)
 
