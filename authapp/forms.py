@@ -30,7 +30,7 @@ class EmployerRegisterForm(UserCreationForm):
         self.fields['tel'] = forms.CharField(label='Телефон компании', validators=[
                     RegexValidator(regex='^8[0-9]{10}$', message='Допускаются только цифры '
                     'начиная с 8-ки, например 84952354422 или 89147900000.')])
-        self.fields['web'] = forms.CharField(label='Вебсайт компании', help_text='Поле необязательно')
+        self.fields['web'] = forms.CharField(label='Вебсайт компании', help_text='Поле необязательно', required=False)
         self.fields['short_description'] = forms.CharField(label='Краткое описание вашей '
                                             'компании', widget=forms.Textarea(attrs={'rows': 5}))
         self.fields['logo'] = forms.ImageField(label='Ваш логотип', required=False,
