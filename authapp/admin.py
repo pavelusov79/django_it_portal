@@ -48,12 +48,18 @@ class EmployerAdmin(admin.ModelAdmin):
 
 
 class SeekerForm(forms.ModelForm):
+    last_name = forms.CharField(max_length=64)
+    first_name = forms.CharField(max_length=64)
+
     class Meta:
         model = Seeker
-        exclude = ('skills', 'hobby',)
+        fields = ('first_name', 'last_name', 'patronimyc', 'sex', 'age', 'city', 'married', 'photo',
+        'tel', 'skills', 'hobby', 'skills', 'failed_moderation', 'activation_key', 'activation_key_expires')
 
     def __init__(self, *args, **kwargs):
         super(SeekerForm, self).__init__(*args, **kwargs)
+        self.fields['last_name'].initial = Seeker.objects.get(pk=self.instance.pk).user.last_name
+        self.fields['first_name'].initial = Seeker.objects.get(pk=self.instance.pk).user.first_name
         self.fields['failed_moderation'] = forms.CharField(max_length=512, label='поле в случае '
             'отклонения модерации', widget=forms.Textarea(attrs={'rows': 5}), required=False)
 
