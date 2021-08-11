@@ -144,4 +144,4 @@ class FavoriteVacancies(models.Model):
         verbose_name_plural = 'Избранные вакансии'
 
     def __str__(self):
-        return f'{self.seeker.user.first_name} {self.seeker.user.last_name} ({self.vacancy.name})'
+        return f'{self.seeker.user.first_name} {self.seeker.user.last_name} ({self.vacancy.vacancy_name})'

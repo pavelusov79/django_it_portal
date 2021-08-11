@@ -9,7 +9,7 @@ from authapp.models import Employer
 from employerapp.forms import VacancyCreationForm, VacancyEditForm, SendOfferForm
 from employerapp.models import Vacancy, SendOffers, FavoriteResumes
 from mainapp.views import change_favorites_vacancies
-from workerapp.models import Resume, SendResponse
+from workerapp.models import Resume, SendResponse, FavoriteVacancies
 
 
 @login_required
@@ -259,10 +259,11 @@ def vacancy_view(request, emp_id, pk):
     title = 'Вакансия'
     vacancy = get_object_or_404(Vacancy, pk=pk)
     employer = get_object_or_404(Employer, pk=emp_id)
+    favorite = FavoriteVacancies.objects.filter(vacancy=vacancy, seeker=request.user.seeker).first()
     if request.is_ajax() and request.user.seeker:
         change_favorites_vacancies(request)
 
-    context = {'title': title, 'item': vacancy, 'employer': employer}
+    context = {'title': title, 'item': vacancy, 'employer': employer, 'favorite': favorite}
 
     return render(request, 'employerapp/vacancy_view.html', context)
 
@@ -433,6 +434,11 @@ def search_resume(request, emp_id):
     from_date = request.GET.get('from_date')
     till_date = request.GET.get('till_date')
     results = None
+    fav_resume = []
+    if search or city or gender or salary or from_date or till_date:
+        favorite_resumes = FavoriteResumes.objects.filter(employer=employer)
+        for item in favorite_resumes:
+            fav_resume.append(item.resume.position)
     if search:
         results = Resume.objects.filter(Q(position__icontains=search) | Q(skills__icontains=search)).filter(action='moderation_ok', hide=False).order_by('-published')
 
@@ -465,7 +471,7 @@ def search_resume(request, emp_id):
             results = results.filter(published__lte=till_date)
         else:
             results = Resume.objects.filter(published__lte=till_date, action='moderation_ok', hide=False).order_by('-published')
-
+    print('fav_resume_search = ', fav_resume)
     page = request.GET.get('page')
     paginator = Paginator(results, 1)
     try:
@@ -475,6 +481,6 @@ def search_resume(request, emp_id):
     except EmptyPage:
         search_paginator = paginator.page(paginator.num_pages)
 
-    context = {'title': title, 'object_list': search_paginator, 'employer': employer}
+    context = {'title': title, 'object_list': search_paginator, 'employer': employer, 'fav_list': fav_resume}
 
     return render(request, 'employerapp/search_resume.html', context)

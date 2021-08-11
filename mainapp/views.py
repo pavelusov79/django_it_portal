@@ -1,5 +1,3 @@
-from itertools import chain
-
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
@@ -17,6 +15,22 @@ from workerapp.models import Resume, FavoriteVacancies
 
 def main(request):
     title = 'Главная'
+    fav_resumes = []
+    fav_vacancies = []
+    try:
+        favorite_resumes = FavoriteResumes.objects.filter(employer=request.user.employer)
+        for item in favorite_resumes:
+            fav_resumes.append(item.resume.position)
+    except AttributeError:
+        pass
+
+    try:
+        fav_vac = FavoriteVacancies.objects.filter(seeker=request.user.seeker)
+        for item in fav_vac:
+            fav_vacancies.append(item.vacancy.vacancy_name)
+    except AttributeError:
+        pass
+
     news = News.objects.filter(is_active=True).order_by('-published')[:3]
     employers = Employer.objects.filter(status='moderation_ok').order_by('?')[:6]
     vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False).order_by(
@@ -40,6 +54,8 @@ def main(request):
         'employers': employers,
         'vacancies': vacancies,
         'resume': resume,
+        'favorite_resumes': fav_resumes,
+        'favorite_vacancies': fav_vacancies
     }
     return render(request, 'mainapp/index.html', context)
 
@@ -104,14 +120,11 @@ def add_delete_favorites(request):
         if data_class == 'bi bi-star':
             favorite_resume = FavoriteResumes(employer=request.user.employer, resume=res)
             if not FavoriteResumes.objects.filter(resume=res, employer=request.user.employer).first():
-                res.is_favorite = True
-                res.save()
                 favorite_resume.save()
         else:
             favorite_resume = FavoriteResumes.objects.get(employer=request.user.employer, resume=res)
             favorite_resume.delete()
-            res.is_favorite = False
-            res.save()
+
         return JsonResponse({})
 
 
@@ -124,12 +137,9 @@ def change_favorites_vacancies(request):
         if data_class == 'bi bi-star':
             favorite_vacancy = FavoriteVacancies(seeker=request.user.seeker, vacancy=vac)
             if not FavoriteVacancies.objects.filter(vacancy=vac, seeker=request.user.seeker).first():
-                vac.is_favorite = True
-                vac.save()
                 favorite_vacancy.save()
         else:
             favorite_vacancy = FavoriteVacancies.objects.get(seeker=request.user.seeker, vacancy=vac)
             favorite_vacancy.delete()
-            vac.is_favorite = False
-            vac.save()
+
         return JsonResponse({})

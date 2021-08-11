@@ -278,11 +278,11 @@ def resume_view(request, seeker_id, pk):
     title = "Резюме"
     seeker = get_object_or_404(Seeker, pk=seeker_id)
     resume = Resume.objects.get(seeker=seeker, action="moderation_ok", pk=pk)
-
+    fav_resume = FavoriteResumes.objects.filter(resume=resume, employer=request.user.employer).first()
     if request.is_ajax() and request.user.employer:
         add_delete_favorites(request)
 
-    context = {'title': title, 'item': resume}
+    context = {'title': title, 'item': resume, 'favorite': fav_resume}
 
     return render(request, 'workerapp/resume_view.html', context)
 
@@ -300,6 +300,12 @@ def search_vacancy(request, seeker_id):
     published_from = request.GET.get('published_from')
     published_till = request.GET.get('published_till')
     results = None
+    fav_vacancies = []
+    if search_vac or company or city_vacancy or salary_level or vacancy_type or published_from or published_till:
+        favorite_vacancies = FavoriteVacancies.objects.filter(seeker=worker)
+        for item in favorite_vacancies:
+            fav_vacancies.append(item.vacancy.vacancy_name)
+
     if search_vac:
         results = Vacancy.objects.filter(Q(vacancy_name__icontains=search_vac) | Q(description__icontains=search_vac), action='moderation_ok', hide=False).order_by('-published')
 
@@ -347,7 +353,7 @@ def search_vacancy(request, seeker_id):
         search_paginator = paginator.page(1)
     except EmptyPage:
         search_paginator = paginator.page(paginator.num_pages)
-    context = {'title': title, 'object_list': search_paginator, 'worker': worker}
+    context = {'title': title, 'object_list': search_paginator, 'worker': worker, 'fav_vacancies': fav_vacancies}
     return render(request, 'workerapp/search_vacancy.html', context)
 
 
