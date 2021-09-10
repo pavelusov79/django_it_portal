@@ -88,6 +88,7 @@ def creation(request, emp_id):
             vacancy.save()
             sent = True
             action = vacancy.action
+
     else:
         form = VacancyCreationForm()
     context = {'title': title, 'form': form, 'sent': sent, 'employer': employer, 'action': action}
