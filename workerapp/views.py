@@ -1,9 +1,9 @@
-from itertools import chain
-
+from django.views.generic.base import ContextMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView, DeleteView, DetailView, ListView, CreateView, UpdateView
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
-from django.forms import modelformset_factory
+from django.forms import modelformset_factory, inlineformset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
@@ -15,436 +15,352 @@ from workerapp.forms import ResumeEducationForm, ResumeExperienceForm, ResumeFor
 from workerapp.models import ResumeExperience, ResumeEducation, Resume, SendResponse, FavoriteVacancies
 
 
-@login_required
-def worker_cabinet(request, seeker_id):
-    title = 'Личный кабинет соискателя'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'seeker': seeker, 'drafts': drafts, 'resumes_hide': resumes_hide, 'resumes': resumes,
-               'resumes_all': resumes_all, 'responses': responses, 'send_resp': send_resp, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/worker_cabinet.html', context)
-
-
-@login_required
-def messages(request, seeker_id):
-    title = 'Сообщения от админа портала'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'seeker': seeker, 'drafts': drafts, 'resumes_hide': resumes_hide, 'resumes': resumes,
-               'resumes_all': resumes_all, 'responses': responses, 'send_resp': send_resp, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/worker_messages.html', context)
+class DataMixin(ContextMixin):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['seeker'] = get_object_or_404(Seeker, pk=kwargs['seeker_id'])
+        context['resumes_all'] = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
+                                                       seeker=context['seeker']).exclude(action='draft',
+                                                                                         hide=True).order_by('published')
+        context['resumes'] = Resume.objects.filter(action='moderation_ok', hide=False,
+                                                   seeker=context['seeker']).order_by('published')
+        context['drafts'] = Resume.objects.filter(action='draft', hide=False,
+                                                  seeker=context['seeker']).order_by('published')
+        context['resumes_hide'] = Resume.objects.filter(hide=True, seeker=context['seeker']).order_by('published')
+        context['responses'] = SendOffers.objects.filter(resume__in=context['resumes']).select_related()
+        context['send_resp'] = SendResponse.objects.filter(resume__seeker=context['seeker'].id).order_by('date')
+        context['favorites'] = FavoriteVacancies.objects.filter(seeker=context['seeker']).order_by('-date')
+        return context
 
 
-@login_required
-def hide_resumes(request, seeker_id):
-    title = 'Удаленные/скрытые резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'seeker': seeker, 'drafts': drafts, 'resumes_hide': resumes_hide, 'resumes': resumes,
-               'resumes_all': resumes_all, 'responses': responses, 'send_resp': send_resp, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/resume_hide.html', context)
+class WorkerCabinetView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/worker_cabinet.html'
+    extra_context = {'title': 'Личный кабинет соискателя'}
 
 
-@login_required
-def resume_drafts(request, seeker_id):
-    title = 'Черновики резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'seeker': seeker, 'drafts': drafts, 'resumes_hide': resumes_hide, 'resumes': resumes,
-               'resumes_all': resumes_all, 'responses': responses, 'send_resp': send_resp, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/resume_drafts.html', context)
+class MessagesView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/worker_messages.html'
+    extra_context = {'title': 'Сообщения от админа портала'}
 
 
-@login_required
-def resume_published(request, seeker_id):
-    title = 'Опубликованные резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'seeker': seeker, 'drafts': drafts, 'resumes_hide': resumes_hide, 'resumes': resumes,
-               'resumes_all': resumes_all, 'responses': responses, 'send_resp': send_resp, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/resume_published.html', context)
+class HideResumesView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/resume_hide.html'
+    extra_context = {'title': 'Удаленные/скрытые резюме'}
 
 
-@login_required
-def favorites(request, seeker_id):
-    title = 'Избранные вакансии'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'seeker': seeker, 'drafts': drafts, 'resumes_hide': resumes_hide, 'resumes': resumes,
-               'resumes_all': resumes_all, 'responses': responses, 'send_resp': send_resp, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/favorites.html', context)
+class ResumeDraftsView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/resume_drafts.html'
+    extra_context = {'title': 'Черновики резюме'}
 
 
-@login_required
-def create_resume(request, seeker_id):
-    title = 'Создание резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resume = None
-    experience = ResumeExperience.objects.filter(resume=resume, is_active=True)
-    education = ResumeEducation.objects.filter(resume=resume, is_active=True)
-    sent = False
-    status = None
-    education_formset = modelformset_factory(ResumeEducation, form=ResumeEducationForm)
-    experience_formset = modelformset_factory(ResumeExperience, form=ResumeExperienceForm)
+class PublishedResumesView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/resume_published.html'
+    extra_context = {'title': 'Опубликованные резюме'}
 
-    if request.method == 'POST':
-        form = ResumeForm(request.POST)
-        education_form = education_formset(request.POST, prefix='1', queryset=education)
-        experience_form = experience_formset(request.POST, prefix='2', queryset=experience)
-        if form.is_valid() and education_form.is_valid() and experience_form.is_valid():
+
+class FavoriteVacanciesView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/favorites.html'
+    extra_context = {'title': 'Избранные вакансии'}
+
+
+class MyResponsesView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/seeker_responses.html'
+    extra_context = {'title': 'Отклики по резюме'}
+
+
+class SendResponsesView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'workerapp/seeker_send_responses.html'
+    extra_context = {'title': 'Направленные отклики по вакансиям'}
+
+
+class SeekerProfileView(LoginRequiredMixin, TemplateView):
+    template_name = 'workerapp/seeker_profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Профиль соискателя'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['resumes'] = Resume.objects.filter(action='moderation_ok', hide=False,
+                                                   seeker=context['seeker']).order_by('published')
+        return context
+
+
+class ResumeCreateView(LoginRequiredMixin, CreateView):
+    template_name = 'workerapp/resume_creation.html'
+    form_class = ResumeForm
+    success_url = 'resume_creation'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Создание резюме'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['sent'] = False
+        context['status'] = None
+        self.education_formset = inlineformset_factory(Resume, ResumeEducation, form=ResumeEducationForm, extra=1)
+        self.experience_formset = inlineformset_factory(Resume, ResumeExperience, form=ResumeExperienceForm, extra=1)
+        context['education_form'] = self.education_formset(prefix='1')
+        context['experience_form'] = self.experience_formset(prefix='2')
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid():
             resume = form.save(commit=False)
-            resume.seeker = seeker
+            resume.seeker = context['seeker']
             resume.action = form.cleaned_data.get('action')
             resume.save()
-            for form in education_form:
-                education = form.save(commit=False)
-                education.edu_type = form.cleaned_data.get('edu_type')
-                education.resume = resume
-                if education.edu_type:
-                    education.save()
-            for form in experience_form:
-                experience = form.save(commit=False)
-                experience.company_name = form.cleaned_data.get('company_name')
-                experience.resume = resume
-                if experience.company_name:
-                    experience.save()
-
-            sent = True
-            status = resume.action
-    else:
-        form = ResumeForm()
-        education_form = education_formset(prefix='1', queryset=education)
-        experience_form = experience_formset(prefix='2', queryset=experience)
-
-    context = {'title': title, 'sent': sent, 'status': status, 'form': form, 'seeker':
-        seeker, 'education_form': education_form, 'experience_form': experience_form,
-               'resume': resume, 'experience': experience}
-    return render(request, 'workerapp/resume_creation.html', context)
+            context['education_form'] = self.education_formset(self.request.POST, prefix='1', instance=resume)
+            context['experience_form'] = self.experience_formset(self.request.POST, prefix='2', instance=resume)
+            if context['education_form'].is_valid():
+                context['education_form'].save()
+            if context['experience_form'].is_valid():
+                context['experience_form'].save()
+            context['sent'] = True
+            context['status'] = resume.action
+            super().form_valid(form)
+        return render(self.request, self.template_name, context)
 
 
-@login_required
-def resume_update(request, seeker_id, pk):
-    title = 'Редактирование резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resume = get_object_or_404(Resume, pk=pk)
-    education = ResumeEducation.objects.filter(resume=resume, is_active=True)
-    experience = ResumeExperience.objects.filter(resume=resume, is_active=True)
-    education_formset = modelformset_factory(ResumeEducation, form=ResumeEducationForm)
-    experience_formset = modelformset_factory(ResumeExperience, form=ResumeExperienceForm)
-    sent = False
-    status = None
-    if request.method == 'POST':
-        form = ResumeForm(request.POST, instance=resume)
-        education_form = education_formset(request.POST, prefix='1', queryset=education)
-        experience_form = experience_formset(request.POST, prefix='2', queryset=experience)
-        if form.is_valid() and education_form.is_valid() and experience_form.is_valid():
-            form.save()
-            for form in education_form:
-                education = form.save(commit=False)
-                education.resume = resume
-                education.edu_type = form.cleaned_data.get('edu_type')
-                if education.edu_type:
-                    education.save()
-            for form in experience_form:
-                experience = form.save(commit=False)
-                experience.company_name = form.cleaned_data.get('company_name')
-                experience.resume = resume
-                if experience.company_name:
-                    experience.save()
+class ResumeUpdateView(LoginRequiredMixin, UpdateView):
+    model = Resume
+    template_name = 'workerapp/resume_creation.html'
+    form_class = ResumeForm
+    context_object_name = 'resume'
+    success_url = 'resume_update'
 
-            resume.failed_moderation = ''
-            resume.save()
-            sent = True
-            status = resume.action
-    else:
-        form = ResumeForm(instance=resume)
-        education_form = education_formset(prefix='1', queryset=education)
-        experience_form = experience_formset(prefix='2', queryset=experience)
-    context = {'title': title, 'seeker': seeker, 'resume': resume, 'sent': sent, 'status': status, 'form': form,
-               'education_form': education_form, 'experience_form': experience_form, 'experience': experience}
-    return render(request, 'workerapp/resume_creation.html', context)
-
-
-@login_required
-def resume_delete(request, seeker_id, pk):
-    title = 'Удаление резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resume = get_object_or_404(Resume, pk=pk)
-    if request.method == 'POST' and (resume.action == 'draft' or resume.action == 'moderation_ok'):
-        if not resume.hide:
-            resume.hide = True
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Редактирование резюме'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['sent'] = False
+        context['status'] = None
+        education_formset = inlineformset_factory(Resume, ResumeEducation, form=ResumeEducationForm, extra=1)
+        experience_formset = inlineformset_factory(Resume, ResumeExperience, form=ResumeExperienceForm, extra=1)
+        if self.request.POST:
+            context['education_form'] = education_formset(self.request.POST, prefix='1', instance=self.object)
+            context['experience_form'] = experience_formset(self.request.POST, prefix='2', instance=self.object)
         else:
-            resume.hide = False
-        resume.save()
-        return HttpResponseRedirect(reverse('worker:seeker_cabinet', args=[resume.seeker.pk]))
+            context['education_form'] = education_formset(prefix='1', instance=self.object)
+            context['experience_form'] = experience_formset(prefix='2', instance=self.object)
+        return context
 
-    context = {'title': title, 'resume_delete': resume, 'seeker': seeker}
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid() and context['education_form'].is_valid() and context['experience_form'].is_valid():
+            obj = form.save(commit=False)
+            obj.failed_moderation = ''
+            obj.action = form.cleaned_data.get('action')
+            obj.failed_moderation = ''
+            obj.save()
+            context['education_form'].save()
+            context['experience_form'].save()
+            context['sent'] = True
+            context['status'] = obj.action
+            print('status= ', context['status'])
+            super().form_valid(form)
+        return render(self.request, self.template_name, context)
 
-    return render(request, 'workerapp/resume_delete.html', context)
 
+class DeleteResumeView(LoginRequiredMixin, DeleteView):
+    model = Resume
+    template_name = 'workerapp/resume_delete.html'
+    context_object_name = 'resume_delete'
 
-@login_required
-def resume_experience_delete(request, seeker_id, resume_id, pk):
-    title = 'Удаление записи об опыте из резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resume = get_object_or_404(Resume, pk=resume_id)
-    experience = get_object_or_404(ResumeExperience, resume=resume, pk=pk)
-    if request.method == 'POST':
-        if experience.is_active:
-            experience.delete()
-            if resume.action == 'draft':
-                return HttpResponseRedirect(reverse('worker:drafts', args=[seeker.pk]))
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Удаление резюме'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        return context
+
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.action == 'draft' or obj.action == 'moderation_ok':
+            if not obj.hide:
+                obj.hide = True
             else:
-                return HttpResponseRedirect(reverse('worker:published', args=[seeker.pk]))
-    context = {'title': title, 'resume': resume, 'seeker': seeker, 'experience': experience}
-
-    return render(request, 'workerapp/resume_experience_delete.html', context)
-
-
-@login_required
-def resume_education_delete(request, seeker_id, resume_id, pk):
-    title = 'Удаление записи об образовании из резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resume = get_object_or_404(Resume, pk=resume_id)
-    education = get_object_or_404(ResumeEducation, resume=resume, pk=pk)
-    if request.method == 'POST':
-        if education.is_active:
-            education.delete()
-            if resume.action == 'draft':
-                return HttpResponseRedirect(reverse('worker:drafts', args=[seeker.pk]))
-            else:
-                return HttpResponseRedirect(reverse('worker:published', args=[seeker.pk]))
-    context = {'title': title, 'resume': resume, 'seeker': seeker, 'education': education}
-
-    return render(request, 'workerapp/resume_education_delete.html', context)
+                obj.hide = False
+            obj.save()
+            return HttpResponseRedirect(reverse('worker:seeker_cabinet', args=[obj.seeker.pk]))
 
 
-@login_required
-def resume_view(request, seeker_id, pk):
-    title = "Резюме"
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resume = Resume.objects.get(seeker=seeker, action="moderation_ok", pk=pk)
-    fav_resume = FavoriteResumes.objects.filter(resume=resume, employer=request.user.employer).first()
-    if request.is_ajax() and request.user.employer:
-        add_delete_favorites(request)
+class FavoriteVacancyDeleteView(LoginRequiredMixin, DeleteView):
+    model = FavoriteVacancies
+    template_name = 'workerapp/delete_favorite.html'
+    context_object_name = 'favorite'
 
-    context = {'title': title, 'item': resume, 'favorite': fav_resume}
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Удаление избранных вакансий'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        return context
 
-    return render(request, 'workerapp/resume_view.html', context)
+    def get_success_url(self):
+        context = self.get_context_data()
+        seeker = context['seeker']
+        return reverse('worker:favorites', args=[seeker.pk])
 
 
-@login_required
-def search_vacancy(request, seeker_id):
-    title = 'Поиск вакансий'
-    worker = get_object_or_404(Seeker, pk=seeker_id)
-    search_vac = request.GET.get('search_vacancy')
-    company = request.GET.get('company')
-    city_vacancy = request.GET.get('city_vacancy')
-    vacancy_type = request.GET.get('type')
-    salary_level = request.GET.get('salary_level')
-    currency = request.GET.get('currency')
-    published_from = request.GET.get('published_from')
-    published_till = request.GET.get('published_till')
-    results = None
-    fav_vacancies = []
-    if search_vac or company or city_vacancy or salary_level or vacancy_type or published_from or published_till:
-        favorite_vacancies = FavoriteVacancies.objects.filter(seeker=worker)
+class ResumeExperienceDeleteView(LoginRequiredMixin, DeleteView):
+    model = ResumeExperience
+    template_name = 'workerapp/resume_experience_delete.html'
+    context_object_name = 'experience'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Удаление записи об опыте из резюме'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['resume'] = get_object_or_404(Resume, pk=self.kwargs['resume_id'])
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        seeker = context['seeker']
+        resume = context['resume']
+        if resume.action == 'draft':
+            return reverse('worker:drafts', args=[seeker.pk])
+        else:
+            return reverse('worker:published', args=[seeker.pk])
+
+
+class ResumeEducationDeleteView(LoginRequiredMixin, DeleteView):
+    model = ResumeEducation
+    template_name = 'workerapp/resume_education_delete.html'
+    context_object_name = 'education'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Удаление записи об образовании из резюме'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['resume'] = get_object_or_404(Resume, pk=self.kwargs['resume_id'])
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        seeker = context['seeker']
+        resume = context['resume']
+        if resume.action == 'draft':
+            return reverse('worker:drafts', args=[seeker.pk])
+        else:
+            return reverse('worker:published', args=[seeker.pk])
+
+
+class ResumeDetailView(LoginRequiredMixin, DetailView):
+    model = Resume
+    template_name = 'workerapp/resume_view.html'
+    context_object_name = 'item'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        context['title'] = "Резюме"
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['favorite'] = FavoriteResumes.objects.filter(resume=self.object,
+                                                             employer=self.request.user.employer).first()
+        if self.request.is_ajax() and self.request.user.employer:
+            add_delete_favorites(self.request)
+        return context
+
+
+class SearchVacancyListView(LoginRequiredMixin, ListView):
+    template_name = 'workerapp/search_vacancy.html'
+    paginate_by = 1
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        context['title'] = 'Поиск вакансий'
+        context['worker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['fav_vacancies'] = []
+        favorite_vacancies = FavoriteVacancies.objects.filter(seeker=context['worker'])
         for item in favorite_vacancies:
-            fav_vacancies.append(item.vacancy.vacancy_name)
+            context['fav_vacancies'].append(item.vacancy.vacancy_name)
+        return context
 
-    if search_vac:
-        results = Vacancy.objects.filter(Q(vacancy_name__icontains=search_vac) | Q(description__icontains=search_vac), action='moderation_ok', hide=False).order_by('-published')
+    def get_queryset(self):
+        search_vac = self.request.GET.get('search_vacancy')
+        company = self.request.GET.get('company')
+        city_vacancy = self.request.GET.get('city_vacancy')
+        vacancy_type = self.request.GET.get('type')
+        salary_level = self.request.GET.get('salary_level')
+        currency = self.request.GET.get('currency')
+        published_from = self.request.GET.get('published_from')
+        published_till = self.request.GET.get('published_till')
+        results = []
+        if search_vac:
+            results = Vacancy.objects.filter(
+                Q(vacancy_name__icontains=search_vac) | Q(description__icontains=search_vac), action='moderation_ok',
+                hide=False).order_by('-published')
 
-    if company:
-        if results:
-            results = results.filter(employer__company_name__icontains=company)
-        else:
-            results = Vacancy.objects.filter(employer__company_name__icontains=company, action='moderation_ok', hide=False).order_by('-published')
+        if company:
+            if results:
+                results = results.filter(employer__company_name__icontains=company)
+            else:
+                results = Vacancy.objects.filter(employer__company_name__icontains=company, action='moderation_ok',
+                                                 hide=False).order_by('-published')
 
-    if city_vacancy:
-        if results:
-            results = results.filter(city=city_vacancy)
-        else:
-            results = Vacancy.objects.filter(city=city_vacancy, action='moderation_ok', hide=False).order_by('-published')
+        if city_vacancy:
+            if results:
+                results = results.filter(city=city_vacancy)
+            else:
+                results = Vacancy.objects.filter(city=city_vacancy, action='moderation_ok', hide=False).order_by(
+                    '-published')
 
-    if vacancy_type != '------':
-        if results:
-            results = results.filter(vacancy_type=vacancy_type)
-        else:
-            results = Vacancy.objects.filter(vacancy_type=vacancy_type, action='moderation_ok', hide=False).order_by('-published')
+        if vacancy_type != '------':
+            if results:
+                results = results.filter(vacancy_type=vacancy_type)
+            else:
+                results = Vacancy.objects.filter(vacancy_type=vacancy_type, action='moderation_ok',
+                                                 hide=False).order_by('-published')
 
-    if salary_level:
-        if results:
-            results = results.filter(min_salary__lte=salary_level, currency=currency)
-        else:
-            results = Vacancy.objects.filter(min_salary__lte=salary_level, currency=currency, action='moderation_ok', hide=False).order_by('-published')
+        if salary_level:
+            if results:
+                results = results.filter(min_salary__lte=salary_level, currency=currency)
+            else:
+                results = Vacancy.objects.filter(min_salary__lte=salary_level, currency=currency,
+                                                 action='moderation_ok', hide=False).order_by('-published')
 
-    if published_from:
-        if results:
-            results = results.filter(published__gte=published_from)
-        else:
-            results = Vacancy.objects.filter(published__gte=published_from, action='moderation_ok', hide=False).order_by('-published')
+        if published_from:
+            if results:
+                results = results.filter(published__gte=published_from)
+            else:
+                results = Vacancy.objects.filter(published__gte=published_from, action='moderation_ok',
+                                                 hide=False).order_by('-published')
 
-    if published_till:
-        if results:
-            results = results.filter(published__lte=published_till)
-        else:
-            results = Vacancy.objects.filter(published__lte=published_till, action='moderation_ok', hide=False).order_by('-published')
-
-    page = request.GET.get('page')
-    paginator = Paginator(results, 1)
-    try:
-        search_paginator = paginator.page(page)
-    except PageNotAnInteger:
-        search_paginator = paginator.page(1)
-    except EmptyPage:
-        search_paginator = paginator.page(paginator.num_pages)
-    context = {'title': title, 'object_list': search_paginator, 'worker': worker, 'fav_vacancies': fav_vacancies}
-    return render(request, 'workerapp/search_vacancy.html', context)
-
-
-@login_required
-def my_responses(request, seeker_id):
-    title = 'Отклики по резюме'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes = Resume.objects.filter(seeker=seeker, action="moderation_ok", hide=False).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'responses': responses, 'seeker': seeker, 'drafts': drafts, 'resumes_hide': resumes_hide,
-               'resumes': resumes, 'resumes_all': resumes_all, 'send_resp': send_resp, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/seeker_responses.html', context)
+        if published_till:
+            if results:
+                results = results.filter(published__lte=published_till)
+            else:
+                results = Vacancy.objects.filter(published__lte=published_till, action='moderation_ok',
+                                                 hide=False).order_by('-published')
+        return results
 
 
-@login_required
-def send_response(request, seeker_id, pk):
-    title = 'Отклик на вакансию'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    vacancy = get_object_or_404(Vacancy, pk=pk)
-    sent = False
+class SendResponseCreateView(LoginRequiredMixin, CreateView):
+    template_name = 'workerapp/send_response.html'
+    form_class = SendResponseForm
+    success_url = 'send_response'
 
-    if request.method == 'POST':
-        form = SendResponseForm(request.POST, seeker=seeker)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Отклик на вакансию'
+        context['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        context['vacancy'] = get_object_or_404(Vacancy, pk=self.kwargs['pk'])
+        context['sent'] = False
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['seeker'] = get_object_or_404(Seeker, pk=self.kwargs['seeker_id'])
+        return kwargs
+
+    def form_valid(self, form):
+        context = self.get_context_data()
         send = SendResponse()
-
         if form.is_valid():
             send.resume = form.cleaned_data.get('resume')
             send.cover_letter = form.cleaned_data.get('cover_letter')
-            send.vacancy = vacancy
+            send.vacancy = context['vacancy']
             send.save()
-            sent = True
-
-    else:
-        form = SendResponseForm(seeker=seeker)
-
-    context = {'title': title, 'form': form, 'sent': sent, 'seeker': seeker, 'vacancy': vacancy}
-
-    return render(request, 'workerapp/send_response.html', context)
-
-
-@login_required
-def send_responses(request, seeker_id):
-    title = 'Направленные отклики по вакансиям'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    send_resp = SendResponse.objects.filter(resume__seeker=seeker.id).order_by('date')
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-    resumes_all = Resume.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
-                                        seeker=seeker).exclude(action='draft').exclude(hide=True).order_by('published')
-    drafts = Resume.objects.filter(action='draft', hide=False, seeker=seeker).order_by('published')
-    resumes_hide = Resume.objects.filter(hide=True, seeker=seeker).order_by('published')
-    responses = SendOffers.objects.filter(resume__in=resumes).select_related()
-    favorite_vacancies = FavoriteVacancies.objects.filter(seeker=seeker).order_by('-date')
-
-    context = {'title': title, 'seeker': seeker, 'send_resp': send_resp, 'resumes': resumes, 'resumes_all': resumes_all,
-               'drafts': drafts, 'responses': responses, 'resumes_hide': resumes_hide, 'favorites': favorite_vacancies}
-
-    return render(request, 'workerapp/seeker_send_responses.html', context)
-
-
-@login_required
-def seeker_profile(request, seeker_id):
-    title = 'Профиль соискателя'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    resumes = Resume.objects.filter(action='moderation_ok', hide=False, seeker=seeker).order_by('published')
-
-    context = {'title': title, 'seeker': seeker, 'resumes': resumes}
-
-    return render(request, 'workerapp/seeker_profile.html', context)
-
-
-@login_required
-def delete_favorite(request, seeker_id, pk):
-    title = 'Удаление избранных вакансий'
-    seeker = get_object_or_404(Seeker, pk=seeker_id)
-    favorite = get_object_or_404(FavoriteVacancies, pk=pk)
-
-    if request.method == 'POST':
-        favorite.delete()
-        return HttpResponseRedirect(reverse('worker:favorites', args=[seeker.pk]))
-
-    context = {'title': title, 'favorite': favorite, 'seeker': seeker}
-
-    return render(request, 'workerapp/delete_favorite.html', context)
+            context['sent'] = True
+            return render(self.request, self.template_name, context)
 
 
 @login_required

@@ -35,7 +35,8 @@
             </div>
         </div>
         {% else %}
-        <h3 class="mb-5 font-italic text-center">Форма создания вакансии</h3>
+        <h3 class="mb-5 font-italic text-center">{% if not object %}Форма создания вакансии{% else %}
+            Форма редактирования вакансии{% endif %}</h3>
         <div class="row justify-content-center">
             <div class="col col-md-6">
                 <form class="form-horizontal vacancy_form"
@@ -43,7 +44,7 @@
                     {% csrf_token %}
                     {{ form.as_p }}
                     <br>
-                    <input class="form-control" type="submit" value="подтвердить">
+                    <input class="form-control btn btn-outline-primary" type="submit" value="подтвердить">
                 </form>
             </div>
         </div>

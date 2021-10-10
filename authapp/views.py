@@ -1,14 +1,15 @@
 import hashlib
 import random
 
-from django.contrib import auth
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.contrib.auth.views import LogoutView, LoginView, auth_login
 from django.core.mail import send_mail
 from django.http import HttpResponseRedirect, HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from django.urls import reverse
+from django.views.generic import TemplateView, CreateView, UpdateView
 
 from authapp.forms import EmployerRegisterForm, UserLoginForm, UserEditForm, EmployerEditForm, \
     SeekerRegisterForm, SeekerEditForm, UserSeekerEditForm, SetPasswordForm
@@ -60,29 +61,27 @@ def seeker_verify(request, email, activation_key):
         return render(request, 'authapp/verification.html', {'user': user, 'title': title})
 
 
-def email_verify(request):
-    title = 'подтверждение почты'
-    context = {'title': title}
-    return render(request, 'authapp/email_verify.html', context)
+class EmailVerifyView(TemplateView):
+    template_name = 'authapp/email_verify.html'
+    extra_context = {'title': 'подтверждение почты'}
 
 
-def register(request):
-    title = 'регистрация работодателя'
+class EmployerRegistrationView(CreateView):
+    template_name = 'authapp/register.html'
+    form_class = EmployerRegisterForm
 
-    if request.method == 'POST':
-        register_form = EmployerRegisterForm(request.POST, request.FILES)
-
-        if register_form.is_valid():
-            user = register_form.save()
+    def form_valid(self, form):
+        if form.is_valid():
+            user = form.save()
             user.is_active = False
             user.save()
             employer = Employer.objects.create(user=user)
-            employer.company_name = register_form.cleaned_data.get('company_name')
-            employer.logo = register_form.cleaned_data.get('logo')
-            employer.city = register_form.cleaned_data.get('city')
-            employer.short_description = register_form.cleaned_data.get('short_description')
-            employer.tel = register_form.cleaned_data.get('tel')
-            employer.web = register_form.cleaned_data.get('web')
+            employer.company_name = form.cleaned_data.get('company_name')
+            employer.logo = form.cleaned_data.get('logo')
+            employer.city = form.cleaned_data.get('city')
+            employer.short_description = form.cleaned_data.get('short_description')
+            employer.tel = form.cleaned_data.get('tel')
+            employer.web = form.cleaned_data.get('web')
             salt = hashlib.sha1(str(random.random()).encode('utf8')).hexdigest()[:6]
             employer.activation_key = hashlib.sha1((user.email + salt).encode('utf8')).hexdigest()
             employer.save()
@@ -91,139 +90,138 @@ def register(request):
             else:
                 return HttpResponse('ошибка отправки сообщения о регистрации')
 
-    else:
-        register_form = EmployerRegisterForm()
 
-    content = {'title': title, 'register_form': register_form}
+class SeekerRegistrationView(CreateView):
+    template_name = 'authapp/register_seeker.html'
+    form_class = SeekerRegisterForm
 
-    return render(request, 'authapp/register.html', content)
-
-
-def register_seeker(request):
-    title = 'регистрация соискателя'
-
-    if request.method == 'POST':
-        register_form = SeekerRegisterForm(request.POST, request.FILES)
-
-        if register_form.is_valid():
-            user = register_form.save()
+    def form_valid(self, form):
+        if form.is_valid():
+            user = form.save()
             user.is_active = False
             user.save()
             seeker = Seeker.objects.create(user=user)
-            seeker.sex = register_form.cleaned_data.get('sex')
-            seeker.tel = register_form.cleaned_data.get('tel')
-            seeker.city = register_form.cleaned_data.get('city')
-            seeker.married = register_form.cleaned_data.get('married')
-            seeker.photo = register_form.cleaned_data.get('photo')
-            seeker.patronimyc = register_form.cleaned_data.get('patronimyc')
-            seeker.age = register_form.cleaned_data.get('age')
+            seeker.sex = form.cleaned_data.get('sex')
+            seeker.tel = form.cleaned_data.get('tel')
+            seeker.city = form.cleaned_data.get('city')
+            seeker.married = form.cleaned_data.get('married')
+            seeker.photo = form.cleaned_data.get('photo')
+            seeker.patronimyc = form.cleaned_data.get('patronimyc')
+            seeker.age = form.cleaned_data.get('age')
             salt = hashlib.sha1(str(random.random()).encode('utf8')).hexdigest()[:6]
             seeker.activation_key = hashlib.sha1((user.email + salt).encode('utf8')).hexdigest()
             seeker.save()
             if send_verify_mail_seeker(user):
                 return HttpResponseRedirect(reverse('auth:email_verify'))
-
             else:
                 return HttpResponse('ошибка отправки сообщения о регистрации')
 
-    else:
-        register_form = SeekerRegisterForm()
 
-    content = {'title': title, 'register_form': register_form}
+class UserLoginView(LoginView):
+    template_name = 'authapp/login.html'
+    authentication_form = UserLoginForm
+    extra_context = {'title': 'вход'}
 
-    return render(request, 'authapp/register_seeker.html', content)
+    def get_success_url(self):
+        return reverse('main')
 
-
-def login(request):
-
-    title = 'вход'
-
-    login_form = UserLoginForm(data=request.POST or None)
-
-    if request.method == 'POST' and login_form.is_valid():
-        username = request.POST['username']
-        password = request.POST['password']
-
-        user = auth.authenticate(username=username, password=password)
-        if user and user.is_active:
-            auth.login(request, user)
-            if user.is_superuser:
-                return HttpResponseRedirect(reverse('admin:index'))
-            else:
-                return HttpResponseRedirect(reverse('main'))
-
-    content = {'title': title, 'login_form': login_form}
-    return render(request, 'authapp/login.html', content)
+    def form_valid(self, form):
+        auth_login(self.request, form.get_user())
+        if form.get_user().is_superuser:
+            return HttpResponseRedirect(reverse('admin:index'))
+        return HttpResponseRedirect(self.get_success_url())
 
 
-def logout(request):
-    auth.logout(request)
-    return HttpResponseRedirect(reverse('main'))
+class LogoutUserView(LogoutView):
+    next_page = 'main'
 
 
-@login_required
-def edit(request):
-    title = 'редактирование работодателя'
-    sent = False
-    user = User.objects.get(id=request.user.id)
-    if request.method == 'POST':
-        edit_form = UserEditForm(request.POST, instance=request.user)
-        employer_form = EmployerEditForm(request.POST, request.FILES,
-                                         instance=request.user.employer)
-        if edit_form.is_valid() and employer_form.is_valid():
-            edit_form.save()
-            employer_form.save()
-            user.employer.status = user.employer.NEED_MODER
-            user.employer.failed_moderation = ''
-            user.employer.save()
-            sent = True
-    else:
-        edit_form = UserEditForm(instance=request.user)
-        employer_form = EmployerEditForm(instance=request.user.employer)
+class EmployerUpdateView(LoginRequiredMixin, UpdateView):
+    template_name = 'authapp/edit.html'
+    model = Employer
+    form_class = EmployerEditForm
+    success_url = 'edit'
 
-    content = {'title': title, 'edit_form': edit_form, 'employer_form': employer_form,
-               'sent': sent}
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'редактирование работодателя'
+        context['sent'] = False
+        if self.request.POST:
+            context['edit_form'] = UserEditForm(self.request.POST,
+                                                instance=User.objects.get(pk=self.request.user.pk))
+        else:
+            context['edit_form'] = UserEditForm(instance=User.objects.get(pk=self.request.user.pk))
+        return context
 
-    return render(request, 'authapp/edit.html', content)
-
-
-@login_required
-def change_password(request):
-    title = 'Смена пароля'
-    sent = False
-    user = User.objects.get(id=request.user.id)
-    if request.method == 'POST':
-        password_form = SetPasswordForm(request.POST)
-        if password_form.is_valid():
-            user.set_password(password_form.cleaned_data['new_password1'])
-            user.save()
-            update_session_auth_hash(request, user)
-            sent = True
-    else:
-        password_form = SetPasswordForm()
-    context = {'title': title, 'form': password_form, 'user': user, 'sent': sent}
-    return render(request, 'authapp/change_password.html', context)
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid() and context['edit_form'].is_valid():
+            form.save()
+            context['edit_form'].save()
+            self.object.status = Employer.NEED_MODER
+            self.object.failed_moderation = ''
+            self.object.save()
+            context['sent'] = True
+            super().form_valid(form)
+            return render(self.request, self.template_name, context)
 
 
-@login_required
-def edit_seeker(request):
-    title = 'редактирование соискателя'
-    sent = False
-    user = User.objects.get(id=request.user.id)
-    if request.method == 'POST':
-        edit_form = UserSeekerEditForm(request.POST, instance=request.user)
-        seeker_form = SeekerEditForm(request.POST, request.FILES, instance=request.user.seeker)
-        if edit_form.is_valid() and seeker_form.is_valid():
-            edit_form.save()
-            seeker_form.save()
-            user.seeker.status = user.seeker.NEED_MODER
-            user.seeker.failed_moderation = ''
-            user.seeker.save()
-            sent = True
-    else:
-        edit_form = UserSeekerEditForm(instance=request.user)
-        seeker_form = SeekerEditForm(instance=request.user.seeker)
+class ChangePasswordView(LoginRequiredMixin, TemplateView):
+    template_name = 'authapp/change_password.html'
+    success_url = 'change_password'
 
-    content = {'title': title, 'edit_form': edit_form, 'seeker_form': seeker_form, 'sent': sent}
+    def get_object(self):
+        return User.objects.get(pk=self.request.user.pk)
 
-    return render(request, 'authapp/edit_seeker.html', content)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Смена пароля'
+        context['sent'] = False
+        context['form'] = SetPasswordForm()
+        context['user'] = self.get_object()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = SetPasswordForm(self.request.POST)
+        if form.is_valid():
+            return self.form_valid(form)
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid():
+            obj = self.get_object()
+            obj.set_password(form.cleaned_data['password1'])
+            obj.save()
+            update_session_auth_hash(self.request, obj)
+            context['sent'] = True
+            return render(self.request, self.template_name, context)
+
+
+class SeekerUpdateView(LoginRequiredMixin, UpdateView):
+    model = Seeker
+    form_class = SeekerEditForm
+    template_name = 'authapp/edit_seeker.html'
+    success_url = 'edit_seeker'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'редактирование соискателя'
+        context['sent'] = False
+        if self.request.POST:
+            context['seeker_form'] = UserSeekerEditForm(self.request.POST,
+                                                        instance=User.objects.get(pk=self.request.user.id))
+        else:
+            context['seeker_form'] = UserSeekerEditForm(instance=User.objects.get(pk=self.request.user.id))
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        if form.is_valid and context['seeker_form'].is_valid():
+            form.save()
+            context['seeker_form'].save()
+            context['sent'] = True
+            self.object.status = Seeker.NEED_MODER
+            self.object.failed_moderation = ''
+            self.object.save()
+            super().form_valid(form)
+            return render(self.request, self.template_name, context)

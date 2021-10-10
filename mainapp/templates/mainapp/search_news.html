@@ -1,13 +1,15 @@
 {% extends 'mainapp/base.html' %}
 {% load static %}
 
+{% block title %}Поиск новостей{% endblock title %}
+
 {% block content %}
 <div class="container my-5">
     <h3 class="font-italic text-center mb-5">Результаты поиска</h3>
     <div class="row justify-content-center">
         <div class="col-12 col-sm-10">
             {% if object_list %}
-            <a class="h5" href="{% url 'news' 1 %}">&laquo вернуться к поиску</a>
+            <a class="h5" href="{% url 'news' %}">&laquo вернуться к поиску</a>
             {% for object in object_list %}
             <div class="row mb-3 mt-5" id="{{ object.id }}">
                 <div class="col-2 h5">{{ object.published|date:"d.m.y" }}</div>
@@ -22,18 +24,18 @@
             </div>
             {% endfor %}
             <div class="text-center mt-4 mb-5">
-            {% if object_list.has_previous %}
-                <span><a class="h4" href="?search={{ request.GET.search }}&page={{ object_list.previous_page_number }}">&laquo</a></span>
+            {% if page_obj.has_previous %}
+                <span><a class="h4" href="?search={{ request.GET.search }}&page={{ page_obj.previous_page_number }}">&laquo</a></span>
             {% endif %}
-            <span class="px-2 font-italic font-weight-bold">страница {{ object_list.number }}
-                    из {{ object_list.paginator.num_pages }}</span>
-            {% if object_list.has_next %}
-                <span><a class="h4" href="?search={{ request.GET.search }}&page={{ object_list.next_page_number }}">&raquo</a></span>
+            <span class="px-2 font-italic font-weight-bold">страница {{ page_obj.number }}
+                    из {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <span><a class="h4" href="?search={{ request.GET.search }}&page={{ page_obj.next_page_number }}">&raquo</a></span>
             {%endif%}
             </div>
             {% else %}
             <p>Поиск не дал результатов. Попробуйте изменить поиск.</p>
-            <a href="{% url 'news' 1 %}">вернуться к поиску</a>
+            <a href="{% url 'news' %}">вернуться к поиску</a>
             {% endif %}
         </div>
     </div>

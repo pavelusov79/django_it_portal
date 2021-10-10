@@ -158,14 +158,14 @@
         {% endfor %}
         <div class="row">
             <div class="col-12 text-center mt-4 mb-5">
-            {% if object_list.has_previous %}
-                <span><a class="h4" href="?page={{ object_list.previous_page_number }}&search={{ request.GET.search }}&city={{ request.get.city }}&gender={{ request.GET.gender }}&salary={{ request.GET.salary }}&currency={{ request.GET.currency }}&from_date={{ request.GET.from_date }}&till_date={{ request.GET.till_date }}">&laquo</a></span>
+            {% if page_obj.has_previous %}
+                <span><a class="h4" href="?page={{ page_obj.previous_page_number }}&search={{ request.GET.search }}&city={{ request.get.city }}&gender={{ request.GET.gender }}&salary={{ request.GET.salary }}&currency={{ request.GET.currency }}&from_date={{ request.GET.from_date }}&till_date={{ request.GET.till_date }}">&laquo</a></span>
             {% endif %}
-                <span class="px-3 font-italic font-weight-bold">страница {{ object_list.number }}
-                    из {{ object_list.paginator.num_pages }}</span>
+                <span class="px-3 font-italic font-weight-bold">страница {{ page_obj.number }}
+                    из {{ page_obj.paginator.num_pages }}</span>
 
-            {% if object_list.has_next %}
-                <span><a class="h4" href="?page={{ object_list.next_page_number }}&search={{ request.GET.search }}&city={{ request.get.city }}&gender={{ request.GET.gender }}&salary={{ request.GET.salary }}&currency={{ request.GET.currency }}&from_date={{ request.GET.from_date }}&till_date={{ request.GET.till_date }}">&raquo</a></span>
+            {% if page_obj.has_next %}
+                <span><a class="h4" href="?page={{ page_obj.next_page_number }}&search={{ request.GET.search }}&city={{ request.get.city }}&gender={{ request.GET.gender }}&salary={{ request.GET.salary }}&currency={{ request.GET.currency }}&from_date={{ request.GET.from_date }}&till_date={{ request.GET.till_date }}">&raquo</a></span>
             {%endif%}
             </div>
         </div>

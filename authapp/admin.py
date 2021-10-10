@@ -53,7 +53,7 @@ class SeekerForm(forms.ModelForm):
 
     class Meta:
         model = Seeker
-        fields = ('first_name', 'last_name', 'patronimyc', 'sex', 'age', 'city', 'married', 'photo',
+        fields = ('user', 'first_name', 'last_name', 'patronimyc', 'sex', 'age', 'city', 'married', 'photo',
         'tel', 'skills', 'hobby', 'status', 'failed_moderation', 'activation_key', 'activation_key_expires')
 
     def __init__(self, *args, **kwargs):

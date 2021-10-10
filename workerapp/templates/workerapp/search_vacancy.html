@@ -57,13 +57,13 @@
             </div>
             {% endfor %}
             <div class="text-center mt-3 mb-5">
-            {% if object_list.has_previous %}
-                <span><a class="h4" href="?search_vacancy={{ request.GET.search_vacancy }}&company={{ request.GET.company }}&city_vacancy={{ request.GET.city_vacancy }}&type={{ request.GET.type }}&salary_level={{ request.GET.salary_level }}&currency={{ request.GET.currency }}&published_from={{ request.GET.published_from }}&published_till={{ request.GET.published_till }}&page={{ object_list.previous_page_number }}">&laquo</a></span>
+            {% if page_obj.has_previous %}
+                <span><a class="h4" href="?search_vacancy={{ request.GET.search_vacancy }}&company={{ request.GET.company }}&city_vacancy={{ request.GET.city_vacancy }}&type={{ request.GET.type }}&salary_level={{ request.GET.salary_level }}&currency={{ request.GET.currency }}&published_from={{ request.GET.published_from }}&published_till={{ request.GET.published_till }}&page={{ page_obj.previous_page_number }}">&laquo</a></span>
             {% endif %}
-            <span class="px-2 font-italic font-weight-bold">страница {{ object_list.number }}
-                    из {{ object_list.paginator.num_pages }}</span>
-            {% if object_list.has_next %}
-                <span><a class="h4" href="?search_vacancy={{ request.GET.search_vacancy }}&company={{ request.GET.company }}&city_vacancy={{ request.GET.city_vacancy }}&type={{ request.GET.type }}&salary_level={{ request.GET.salary_level }}&currency={{ request.GET.currency }}&published_from={{ request.GET.published_from }}&published_till={{ request.GET.published_till }}&page={{ object_list.next_page_number }}">&raquo</a></span>
+            <span class="px-2 font-italic font-weight-bold">страница {{ page_obj.number }}
+                    из {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <span><a class="h4" href="?search_vacancy={{ request.GET.search_vacancy }}&company={{ request.GET.company }}&city_vacancy={{ request.GET.city_vacancy }}&type={{ request.GET.type }}&salary_level={{ request.GET.salary_level }}&currency={{ request.GET.currency }}&published_from={{ request.GET.published_from }}&published_till={{ request.GET.published_till }}&page={{ page_obj.next_page_number }}">&raquo</a></span>
             {%endif%}
             </div>
             {% else %}

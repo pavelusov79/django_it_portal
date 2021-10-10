@@ -1,14 +1,16 @@
 {% extends 'mainapp/base.html' %}
 {% load static %}
 
+{% block title %}Регистрация работодателя{% endblock title %}
+
 {% block content %}
 <div class="container my-5">
-    <h1 class="mb-5 text-center font-italic">Регистрация</h1>
+    <h1 class="mb-5 text-center font-italic">Регистрация работодателя</h1>
     <div class="row justify-content-center">
         <div class="col-12 col-md-6">
             <form class="form-horizontal" action="{% url 'auth:register' %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                {{ register_form.as_p }}
+                {{ form.as_p }}
                 <br>
                 <input class="form-control" type="submit" value="зарегистрироваться">
             </form>

@@ -1,114 +1,82 @@
-from django.contrib import auth
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
-from django.http import HttpResponseRedirect, JsonResponse
-from django.shortcuts import render
-from django.urls import reverse
+from django.http import JsonResponse
+from django.views.generic import ListView, DetailView
 
-from authapp.forms import UserLoginForm
+from authapp.views import UserLoginView
 from authapp.models import Employer
 from employerapp.models import Vacancy, FavoriteResumes
 from mainapp.models import News
 from workerapp.models import Resume, FavoriteVacancies
 
 
-def main(request):
-    title = 'Главная'
-    fav_resumes = []
-    fav_vacancies = []
-    try:
-        favorite_resumes = FavoriteResumes.objects.filter(employer=request.user.employer)
-        for item in favorite_resumes:
-            fav_resumes.append(item.resume.position)
-    except AttributeError:
-        pass
+class MainView(UserLoginView, ListView):
+    template_name = 'mainapp/index.html'
+    paginate_by = 2
 
-    try:
-        fav_vac = FavoriteVacancies.objects.filter(seeker=request.user.seeker)
-        for item in fav_vac:
-            fav_vacancies.append(item.vacancy.vacancy_name)
-    except AttributeError:
-        pass
-
-    news = News.objects.filter(is_active=True).order_by('-published')[:3]
-    employers = Employer.objects.filter(status='moderation_ok').order_by('?')[:6]
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False).order_by(
-        '-published')
-    resume = Resume.objects.filter(action='moderation_ok', hide=False).order_by('-published')
-    login_form = UserLoginForm(data=request.POST or None)
-
-    if request.method == 'POST' and login_form.is_valid():
-        username = request.POST['username']
-        password = request.POST['password']
-
-        user = auth.authenticate(username=username, password=password)
-        if user and user.is_active:
-            auth.login(request, user)
-            return HttpResponseRedirect(reverse('main'))
-
-    context = {
-        'title': title,
-        'news': news,
-        'login_form': login_form,
-        'employers': employers,
-        'vacancies': vacancies,
-        'resume': resume,
-        'favorite_resumes': fav_resumes,
-        'favorite_vacancies': fav_vacancies
-    }
-    return render(request, 'mainapp/index.html', context)
-
-
-def news(request, page=1):
-    title = 'Новости'
-    news = News.objects.filter(is_active=True).order_by('-published')
-    paginator = Paginator(news, 4)
-    try:
-        news_paginator = paginator.page(page)
-    except PageNotAnInteger:
-        news_paginator = paginator.page(1)
-    except EmptyPage:
-        news_paginator = paginator.page(paginator.num_pages)
-    context = {
-        'title': title,
-        'news': news_paginator,
-    }
-    return render(request, 'mainapp/news.html', context)
-
-
-def news_detail(request, pk):
-    one_news = News.objects.get(pk=pk)
-    title = one_news.pk
-    url = f'http://127.0.0.1:8000{request.path}'
-    context = {
-        'title': title,
-        'one_news': one_news,
-        'url': url
-    }
-    return render(request, 'mainapp/news_detail.html', context)
-
-
-def search_news(request):
-    title = 'Поиск новостей'
-    search = request.GET.get('search')
-    search_paginator = None
-    if search:
-        results = News.objects.filter(Q(title__icontains=search) | Q(description__icontains=search), is_active=True).order_by(
-            '-published')
-
-        page = request.GET.get('page')
-        paginator = Paginator(results, 4)
+    def get_queryset(self):
         try:
-            search_paginator = paginator.page(page)
-        except PageNotAnInteger:
-            search_paginator = paginator.page(1)
-        except EmptyPage:
-            search_paginator = paginator.page(paginator.num_pages)
+            if self.request.user.employer:
+                return Resume.objects.filter(action='moderation_ok', hide=False).order_by('-published')
+        except Employer.DoesNotExist:
+            pass
+        except AttributeError:
+            return []
+        try:
+            if self.request.user.seeker:
+                return Vacancy.objects.filter(action='moderation_ok', hide=False).order_by('-published')
+        except AttributeError:
+            return []
 
-    context = {'title': title, 'object_list': search_paginator}
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Главная'
+        context['favorite_resumes'] = []
+        context['favorite_vacancies'] = []
+        try:
+            favorite_resumes = FavoriteResumes.objects.filter(employer=self.request.user.employer)
+            for item in favorite_resumes:
+                context['favorite_resumes'].append(item.resume.position)
+        except AttributeError:
+            pass
+        try:
+            fav_vac = FavoriteVacancies.objects.filter(seeker=self.request.user.seeker)
+            for item in fav_vac:
+                context['favorite_vacancies'].append(item.vacancy.vacancy_name)
+        except AttributeError:
+            pass
+        context['news'] = News.objects.filter(is_active=True).order_by('-published')[:3]
+        context['employers'] = Employer.objects.filter(status='moderation_ok').order_by('?')[:6]
+        return context
 
-    return render(request, 'mainapp/search_news.html', context)
+
+class NewsListView(ListView):
+    queryset = News.objects.filter(is_active=True).order_by('-published')
+    paginate_by = 4
+
+
+class NewsDetailView(DetailView):
+    model = News
+    context_object_name = 'one_news'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = self.kwargs['pk']
+        context['url'] = f'http://127.0.0.1:8000{self.request.path}'
+        return context
+
+
+class SearchNewsListView(ListView):
+    template_name = 'mainapp/search_news.html'
+    paginate_by = 4
+
+    def get_queryset(self):
+        search = self.request.GET.get('search')
+        if search:
+            results = News.objects.filter(Q(title__icontains=search) | Q(description__icontains=search),
+                                          is_active=True).order_by('-published')
+            return results
+        return News.objects.all().order_by('-published')
 
 
 @login_required

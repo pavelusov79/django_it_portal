@@ -31,13 +31,18 @@ class ResumeForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
-    def clean_max_salary(self):
-        max_salary = self.cleaned_data['max_salary']
-        min_salary = self.cleaned_data['min_salary']
+    def clean(self):
+        cleaned_data = super().clean()
+        min_salary = cleaned_data['min_salary']
+        max_salary = cleaned_data['max_salary']
+        currency = cleaned_data['currency']
         if min_salary and max_salary:
-            if min_salary > max_salary:
-                raise forms.ValidationError(f'Максимальный уровень зп меньше минимального')
-        return max_salary
+            if int(min_salary) > int(max_salary):
+                raise forms.ValidationError({'max_salary': 'Максимальный уровень зп не может быть меньше минимального.'})
+        if min_salary or max_salary:
+            if not currency:
+                raise forms.ValidationError({'currency': 'Введите валюту.'})
+        return cleaned_data
 
 
 class ResumeEducationForm(forms.ModelForm):
@@ -72,11 +77,10 @@ class ResumeEducationForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control'
 
     def clean_to_date(self):
-        to_date = self.cleaned_data['to_date']
-        from_date = self.cleaned_data['from_date']
-        if to_date and from_date:
-            if to_date < from_date:
-                raise forms.ValidationError(f'Дата окончания раньше даты начала.')
+        from_date = self.cleaned_data.get('from_date')
+        to_date = self.cleaned_data.get('to_date')
+        if to_date and from_date and to_date < from_date:
+            raise forms.ValidationError('Дата окончания обучения не должна быть раньше даты начала.')
         return to_date
 
 
@@ -106,11 +110,11 @@ class ResumeExperienceForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control'
 
     def clean_finish_date(self):
-        finish_date = self.cleaned_data['finish_date']
-        start_date = self.cleaned_data['start_date']
+        start_date = self.cleaned_data.get('start_date')
+        finish_date = self.cleaned_data.get('finish_date')
         if start_date and finish_date:
             if finish_date < start_date:
-                raise forms.ValidationError(f'Дата окончания раньше даты начала.')
+                raise forms.ValidationError('Дата окончания работы в данном месте работы не может быть раньше даты начала.')
         return finish_date
 
 

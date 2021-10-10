@@ -58,7 +58,7 @@
                     </button>
                 </div>
             </form>
-            {% for item in resume %}
+            {% for item in object_list %}
             <div class="mb-5">
                 <div class="d-flex">
                     <h4 style="color: blue;"><a href="{% url 'worker:resume_view' item.seeker.pk item.pk %}">{{ item.position }}</a></h4>
@@ -105,6 +105,19 @@
                 </div>
             </div>
             {% endfor %}
+            <div class="text-center mb-2">
+                {% if page_obj.has_previous %}
+                <span>
+                    <a class="h4" href="?page={{ page_obj.previous_page_number }}">&laquo</a>
+                </span>
+                {% endif %}
+                <span class="px-3 font-italic font-weight-bold">страница {{ page_obj.number }} из {{page_obj.paginator.num_pages}}</span>
+                {% if page_obj.has_next %}
+                <span>
+                    <a class="h4" href="?page={{ page_obj.next_page_number }}">&raquo</a>
+                </span>
+                {%endif%}
+            </div>
         </div>
     </div>
 </div>
@@ -168,7 +181,7 @@
                     </button>
                 </div>
             </form>
-            {% for vacancy in vacancies %}
+            {% for vacancy in object_list %}
             <div class="mb-5">
                 <div class="d-flex">
                     <h4 style="color: blue;"><a href="{% url 'employer:vacancy_view' vacancy.employer.pk vacancy.pk %}">{{ vacancy.vacancy_name }}</a></h4>
@@ -208,6 +221,19 @@
                 </div>
             </div>
             {% endfor %}
+            <div class="text-center mb-2">
+                {% if page_obj.has_previous %}
+                <span>
+                    <a class="h4" href="?page={{ page_obj.previous_page_number }}">&laquo</a>
+                </span>
+                {% endif %}
+                <span class="px-3 font-italic font-weight-bold">страница {{ page_obj.number }} из {{page_obj.paginator.num_pages}}</span>
+                {% if page_obj.has_next %}
+                <span>
+                    <a class="h4" href="?page={{ page_obj.next_page_number }}">&raquo</a>
+                </span>
+                {%endif%}
+            </div>
         </div>
     </div>
 </div>
@@ -233,7 +259,7 @@
                 зарегистрированных пользователей</h5>
             <form class="w-100" action="{% url 'auth:login' %}" method="post">
                 {% csrf_token %}
-                {{ login_form.as_p }}
+                {{ form.as_p }}
                 <br>
                 <input class="btn btn-primary form-control mb-5" type="submit"
                        value="войти на портал">

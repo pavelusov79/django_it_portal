@@ -9,7 +9,7 @@
     <div class="row justify-content-center">
         <div class="col-12 col-md-6 mb-5">
             <button class="btn w-100">
-                <a href="{% url 'auth:edit' %}" class="">
+                <a href="{% url 'auth:edit' object.pk %}" class="">
                     продолжить редактирование
                 </a>
             </button>
@@ -21,15 +21,15 @@
 </div>
 {% else %}
 <div class="container mt-5">
-    <h4 class="text-center mb-3 font-italic">Редактирование данных пользователя {{ user.username }}
-        ({{ user.employer.company_name }})</h4>
+    <h4 class="text-center mb-3 font-italic">Редактирование данных пользователя {{ object.user.username }}
+        ({{ object.company_name }})</h4>
     <div class="row justify-content-center">
         <div class="col-12 col-md-6 mb-5">
-            <form class="form-horizontal w-100" action="{% url 'auth:edit' %}" method="post"
+            <form class="form-horizontal w-100" action="{% url 'auth:edit' object.pk %}" method="post"
                   enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ edit_form.as_p }}
-                {{ employer_form.as_p }}
+                {{ form.as_p }}
                 <input class="form-control" type="submit" value="сохранить">
             </form>
         </div>

@@ -22,10 +22,10 @@ from mainapp import views
 
 urlpatterns = [
     path('admin/', admin.site.urls, name='admin'),
-    path('', views.main, name='main'),
-    path('news/<int:page>/', views.news, name='news'),
-    path('search_news/', views.search_news, name='search_news'),
-    path('news/detail/<int:pk>', views.news_detail, name="news_detail"),
+    path('', views.MainView.as_view(), name='main'),
+    path('news/', views.NewsListView.as_view(), name='news'),
+    path('search_news/', views.SearchNewsListView.as_view(), name='search_news'),
+    path('news/detail/<int:pk>/', views.NewsDetailView.as_view(), name="news_detail"),
     path('auth/', include('authapp.urls', namespace='auth')),
     path('employer/', include('employerapp.urls', namespace='employer')),
     path('worker/', include('workerapp.urls', namespace='worker')),

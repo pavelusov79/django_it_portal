@@ -24,7 +24,7 @@
 			  	{% if user.employer %}
 				{% if user.employer.status == 'moderation_reject' or user.employer.status == 'need_moderation'%}
 				  	<li class="nav-item">
-						<a class="nav-link {% if request.resolver_match.url_name == 'edit' %}active{% endif %}" href="{% url 'auth:edit' %}">Редактирование профиля</a>
+						<a class="nav-link {% if request.resolver_match.url_name == 'edit' %}active{% endif %}" href="{% url 'auth:edit' user.employer.pk %}">Редактирование профиля</a>
 					</li>
 				  	<li class="nav-item">
 						<a class="nav-link {% if request.resolver_match.url_name == 'cabinet' %}active{% endif %}" href="{% url 'employer:cabinet' user.employer.pk %}">Личный кабинет</a>
@@ -38,12 +38,12 @@
 					<a class="nav-link" href="{% url 'auth:logout' %}">Выход</a>
 				  </li>
 			  	<li class="nav-item">
-				  <a class="nav-link {% if request.resolver_match.url_name == 'news' %}active{% endif %}" href="{% url 'news' 1 %}">Новости</a>
+				  <a class="nav-link {% if request.resolver_match.url_name == 'news' %}active{% endif %}" href="{% url 'news' %}">Новости</a>
 				</li>
 			  	{% elif user.seeker %}
 			  	{% if user.seeker.status == 'moderation_reject' or user.seeker.status == 'need_moderation'%}
 				  	<li class="nav-item">
-						<a class="nav-link {% if request.resolver_match.url_name == 'edit_seeker' %}active{% endif %}" href="{% url 'auth:edit_seeker' %}">Редактирование профиля</a>
+						<a class="nav-link {% if request.resolver_match.url_name == 'edit_seeker' %}active{% endif %}" href="{% url 'auth:edit_seeker' user.seeker.pk %}">Редактирование профиля</a>
 					</li>
 				  	<li class="nav-item">
 						<a class="nav-link {% if request.resolver_match.url_name == 'seeker_cabinet' %}active{% endif %}" href="{% url 'worker:seeker_cabinet' user.seeker.pk %}">Личный кабинет</a>
@@ -57,17 +57,17 @@
 					<a class="nav-link" href="{% url 'auth:logout' %}">Выход</a>
 				  </li>
 			  	<li class="nav-item">
-				  <a class="nav-link {% if request.resolver_match.url_name == 'news' %}active{% endif %}" href="{% url 'news' 1 %}">Новости</a>
+				  <a class="nav-link {% if request.resolver_match.url_name == 'news' %}active{% endif %}" href="{% url 'news' %}">Новости</a>
 				</li>
 			  	{% else %}
 			  	<li class="nav-item">
-				  <a class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}" href="{% url 'auth:register' %}">регистрация работодателя</a>
+				  <a class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}" href="{% url 'auth:register' %}">Регистрация работодателя</a>
 				</li>
 			  	<li class="nav-item">
-				  <a class="nav-link {% if request.resolver_match.url_name == 'register_seeker' %}active{% endif %}" href="{% url 'auth:register_seeker' %}">регистрация соискателя</a>
+				  <a class="nav-link {% if request.resolver_match.url_name == 'register_seeker' %}active{% endif %}" href="{% url 'auth:register_seeker' %}">Регистрация соискателя</a>
 				</li>
 			  	<li class="nav-item">
-				  <a class="nav-link {% if request.resolver_match.url_name == 'news' %}active{% endif %}" href="{% url 'news' 1 %}">Новости</a>
+				  <a class="nav-link {% if request.resolver_match.url_name == 'news' %}active{% endif %}" href="{% url 'news' %}">Новости</a>
 				</li>
 			  	{% endif %}
 			  </ul>

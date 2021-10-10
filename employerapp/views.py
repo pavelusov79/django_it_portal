@@ -1,272 +1,180 @@
 from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
+from django.views.generic import TemplateView, DetailView, DeleteView, UpdateView, ListView, CreateView
+from django.views.generic.base import ContextMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 from authapp.models import Employer
-from employerapp.forms import VacancyCreationForm, VacancyEditForm, SendOfferForm
+from employerapp.forms import VacancyCreationForm, SendOfferForm
 from employerapp.models import Vacancy, SendOffers, FavoriteResumes
 from mainapp.views import change_favorites_vacancies
 from workerapp.models import Resume, SendResponse, FavoriteVacancies
 
 
-@login_required
-def employer_cabinet(request, emp_id):
-    title = 'Личный кабинет работодателя'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by(
-        'published')
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by(
-        'published')
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(hide=True).order_by('published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-    context = {
-        'title': title,
-        'vacancies': vacancies,
-        'employer': employer,
-        'drafts': drafts,
-        'vacancies_hide': vacancies_hide,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
-    return render(request, 'employerapp/employer_cabinet.html', context)
+class DataMixin(ContextMixin):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['employer'] = get_object_or_404(Employer, pk=kwargs['emp_id'])
+        context['vacancies'] = Vacancy.objects.filter(action='moderation_ok', hide=False,
+                                                      employer=context['employer']).order_by('published')
+        context['drafts'] = Vacancy.objects.filter(action='draft', hide=False,
+                                                   employer=context['employer']).order_by('published')
+        context['vacancies_hide'] = Vacancy.objects.filter(hide=True,
+                                                           employer=context['employer']).order_by('published')
+        context['vacancies_all'] = Vacancy.objects.filter(Q(action='moderation_ok') | Q(action='moderation_reject'),
+                                                          employer=context['employer']).exclude(action='draft',
+                                                          hide=True).order_by('published')
+        context['offers'] = SendOffers.objects.filter(vacancy__employer=context['employer'].pk).order_by('date')
+        context['take_offers'] = SendResponse.objects.filter(vacancy__in=context['vacancies']).select_related()
+        context['favorites'] = FavoriteResumes.objects.filter(employer=context['employer']).order_by('date')
+        return context
 
 
-@login_required
-def vacancy_published(request, emp_id):
-    title = 'Опубликованные вакансии'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by(
-        'published')
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by(
-        'published')
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(
-        hide=True).order_by('published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-    context = {
-        'title': title,
-        'vacancies': vacancies,
-        'employer': employer,
-        'drafts': drafts,
-        'vacancies_hide': vacancies_hide,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
-    return render(request, 'employerapp/vacancy_published.html', context)
+class EmployerCabinetView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/employer_cabinet.html'
+    extra_context = {'title': 'Личный кабинет работодателя'}
 
 
-@login_required
-def creation(request, emp_id):
-    employer = get_object_or_404(Employer, pk=emp_id)
-    title = 'создание вакансии'
-    sent = False
-    action = None
-    if request.method == 'POST':
-        form = VacancyCreationForm(request.POST)
+class VacancyPublishedView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/vacancy_published.html'
+    extra_context = {'title': 'Опубликованные вакансии'}
+
+
+class VacancyDraftView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/vacancy_drafts.html'
+    extra_context = {'title': 'Черновики'}
+
+
+class MessagesView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/employer_messages.html'
+    extra_context = {'title': 'Сообщения от админа портала'}
+
+
+class VacancyHideView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/vacancy_hide.html'
+    extra_context = {'title': 'Удаленные вакансии'}
+
+
+class SendOffersView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/employer_offers.html'
+    extra_context = {'title': 'Направленные предложения'}
+
+
+class MyOffersView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/offers_list.html'
+    extra_context = {'title': 'Отклики по вакансиям'}
+
+
+class FavoritesResumeView(LoginRequiredMixin, DataMixin, TemplateView):
+    template_name = 'employerapp/favorites.html'
+    extra_context = {'title': 'Избранные резюме'}
+
+
+class CompanyProfileView(TemplateView):
+    template_name = 'employerapp/company_profile.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['employer'] = get_object_or_404(Employer, pk=kwargs['emp_id'])
+        context['vacancies'] = Vacancy.objects.filter(action='moderation_ok', hide=False,
+                                                      employer=context['employer']).order_by('published')
+        context['title'] = 'Профиль компании'
+        return context
+
+
+class VacancyDetailView(LoginRequiredMixin, DetailView):
+    model = Vacancy
+    context_object_name = 'item'
+    template_name = 'employerapp/vacancy_view.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        context['favorite'] = FavoriteVacancies.objects.filter(vacancy=self.object,
+                                                               seeker=self.request.user.seeker).first()
+        context['title'] = 'Вакансия'
+        if self.request.is_ajax() and self.request.user.seeker:
+            change_favorites_vacancies(self.request)
+        return context
+
+
+class CreateVacancyView(LoginRequiredMixin, CreateView):
+    model = Vacancy
+    template_name = 'employerapp/vacancy_creation.html'
+    form_class = VacancyCreationForm
+    success_url = 'vacancy_creation'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'создание вакансии'
+        context['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        context['sent'] = False
+        context['action'] = None
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
         if form.is_valid():
-            vacancy = form.save(commit=False)
-            vacancy.action = form.cleaned_data.get('action')
-            vacancy.employer = employer
-            vacancy.save()
-            sent = True
-            action = vacancy.action
-
-    else:
-        form = VacancyCreationForm()
-    context = {'title': title, 'form': form, 'sent': sent, 'employer': employer, 'action': action}
-
-    return render(request, 'employerapp/vacancy_creation.html', context)
+            obj = form.save(commit=False)
+            obj.action = form.cleaned_data.get('action')
+            obj.employer = context['employer']
+            obj.save()
+            context['sent'] = True
+            context['action'] = obj.action
+            super().form_valid(form)
+        return render(self.request, self.template_name, context)
 
 
-@login_required
-def vacancy_edit_draft(request, emp_id, pk):
-    title = 'Редактирование вакансии'
-    vacancy = get_object_or_404(Vacancy, pk=pk)
-    employer = get_object_or_404(Employer, pk=emp_id)
-    sent = False
-    action = None
-    if request.method == 'POST':
-        form = VacancyCreationForm(request.POST, instance=vacancy)
+class VacancyEditView(LoginRequiredMixin, UpdateView):
+    template_name = 'employerapp/vacancy_creation.html'
+    model = Vacancy
+    form_class = VacancyCreationForm
+    success_url = 'vacancy_edit'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Редактирование вакансии'
+        context['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        context['sent'] = False
+        context['action'] = None
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
         if form.is_valid():
-            form.save()
-            sent = True
-            action = vacancy.action
-    else:
-        form = VacancyCreationForm(instance=vacancy)
-
-    context = {'title': title, 'form': form, 'sent': sent, 'employer': employer, 'vacancy':
-        vacancy, 'action': action}
-
-    return render(request, 'employerapp/vacancy_edit.html', context)
+            obj = form.save(commit=False)
+            obj.fall_moderation = ''
+            obj.action = form.cleaned_data.get('action')
+            obj.save()
+            context['sent'] = True
+            context['action'] = obj.action
+            super().form_valid(form)
+        return render(self.request, self.template_name, context)
 
 
-@login_required
-def vacancy_edit(request, emp_id, pk):
-    title = 'Редактирование вакансии'
-    vacancy = get_object_or_404(Vacancy, pk=pk)
-    employer = get_object_or_404(Employer, pk=emp_id)
-    sent = False
-    action = None
-    if request.method == 'POST':
-        form = VacancyEditForm(request.POST, instance=vacancy)
-        vacancy.action = 'publish'
-        vacancy.fall_moderation = ''
-        form.save()
-        vacancy.save()
-        sent = True
-    else:
-        form = VacancyEditForm(instance=vacancy)
+class VacancyDeleteView(LoginRequiredMixin, DeleteView):
+    model = Vacancy
+    context_object_name = 'vacancy_delete'
+    template_name = 'employerapp/vacancy_delete.html'
 
-    context = {'title': title, 'form': form, 'sent': sent, 'employer': employer, 'vacancy':
-        vacancy, 'action': action}
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        context['title'] = 'Удаление вакансии'
+        return context
 
-    return render(request, 'employerapp/vacancy_edit.html', context)
-
-
-@login_required
-def vacancy_delete(request, emp_id, pk):
-    title = 'Удаление вакансии'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancy = get_object_or_404(Vacancy, pk=pk)
-    if request.method == 'POST' and (vacancy.action == 'draft' or vacancy.action ==
-                                     'moderation_ok'):
-        if not vacancy.hide:
-            vacancy.hide = True
-        else:
-            vacancy.hide = False
-        vacancy.save()
-        return HttpResponseRedirect(reverse('employer:cabinet', args=[vacancy.employer.pk]))
-
-    context = {'title': title, 'vacancy_delete': vacancy, 'employer': employer}
-
-    return render(request, 'employerapp/vacancy_delete.html', context)
-
-
-@login_required
-def vacancy_draft(request, emp_id):
-    employer = get_object_or_404(Employer, pk=emp_id)
-    title = 'Черновики'
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by('published')
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by(
-        'published')
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(
-        hide=True).order_by('published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-    context = {
-        'title': title,
-        'employer': employer,
-        'drafts': drafts,
-        'vacancies_hide': vacancies_hide,
-        'vacancies': vacancies,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
-
-    return render(request, 'employerapp/vacancy_drafts.html', context)
-
-
-@login_required
-def vacancy_hide(request, emp_id):
-    employer = get_object_or_404(Employer, pk=emp_id)
-    title = 'Удаленные вакансии'
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by(
-        'published')
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by(
-        'published')
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(
-        hide=True).order_by('published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-    context = {
-        'title': title,
-        'employer': employer,
-        'vacancies_hide': vacancies_hide,
-        'drafts': drafts,
-        'vacancies': vacancies,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
-
-    return render(request, 'employerapp/vacancy_hide.html', context)
-
-
-@login_required
-def messages(request, emp_id):
-    title = 'Сообщения от админа портала'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(
-        hide=True).order_by('published')
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by('published')
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by(
-        'published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-
-    context = {
-        'title': title,
-        'employer': employer,
-        'vacancies_hide': vacancies_hide,
-        'drafts': drafts,
-        'vacancies': vacancies,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
-
-    return render(request, 'employerapp/employer_messages.html', context)
-
-
-@login_required
-def vacancy_view(request, emp_id, pk):
-    title = 'Вакансия'
-    vacancy = get_object_or_404(Vacancy, pk=pk)
-    employer = get_object_or_404(Employer, pk=emp_id)
-    favorite = FavoriteVacancies.objects.filter(vacancy=vacancy, seeker=request.user.seeker).first()
-    if request.is_ajax() and request.user.seeker:
-        change_favorites_vacancies(request)
-
-    context = {'title': title, 'item': vacancy, 'employer': employer, 'favorite': favorite}
-
-    return render(request, 'employerapp/vacancy_view.html', context)
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.action == 'draft' or obj.action == 'moderation_ok':
+            if not obj.hide:
+                obj.hide = True
+            else:
+                obj.hide = False
+            obj.save()
+            return HttpResponseRedirect(reverse('employer:cabinet', args=[obj.employer.pk]))
 
 
 @login_required
@@ -282,206 +190,114 @@ def offer_ajax(request):
             return send_offer
 
 
-@login_required
-def send_offer(request, emp_id, pk):
-    title = 'Предложение по работе'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    resume = get_object_or_404(Resume, pk=pk)
+class SendOfferCreateView(LoginRequiredMixin, CreateView):
+    template_name = 'employerapp/send_offer.html'
+    form_class = SendOfferForm
+    success_url = 'send_offer'
 
-    sent = False
-    if request.method == 'POST':
-        form = SendOfferForm(request.POST, employer=employer)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Предложение по работе'
+        context['sent'] = False
+        context['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        context['resume'] = get_object_or_404(Resume, pk=self.kwargs['pk'])
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        return kwargs
+
+    def form_valid(self, form):
+        context = self.get_context_data()
         send = SendOffers()
-
         if form.is_valid():
             send.vacancy = form.cleaned_data.get('vacancy')
             send.cover_letter = form.cleaned_data.get('cover_letter')
             send.contact_phone = form.cleaned_data.get('contact_phone')
-            send.resume = resume
+            send.resume = context['resume']
             send.save()
-            sent = True
-    else:
-        form = SendOfferForm(employer=employer)
-
-    context = {'title': title, 'employer': employer, 'sent': sent, 'form': form}
-
-    return render(request, 'employerapp/send_offer.html',  context)
+            context['sent'] = True
+            return render(self.request, self.template_name, context)
 
 
-@login_required
-def send_offers(request, emp_id):
-    title = 'Направленные предложения'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(
-        hide=True).order_by('published')
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by('published')
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by(
-        'published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-    context = {
-        'title': title,
-        'employer': employer,
-        'vacancies_hide': vacancies_hide,
-        'drafts': drafts,
-        'vacancies': vacancies,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
+class DeleteFavoriteResumeView(LoginRequiredMixin, DeleteView):
+    model = FavoriteResumes
+    template_name = 'employerapp/delete_favorite.html'
+    context_object_name = 'favorite'
 
-    return render(request, 'employerapp/employer_offers.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Удаление избранных резюме'
+        context['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        return context
+
+    def get_success_url(self):
+        context = self.get_context_data()
+        employer = context['employer']
+        return reverse('employer:favorites', args=[employer.pk])
 
 
-@login_required
-def my_offers(request, emp_id):
-    title = 'Отклики по вакансиям'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by('published')
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(
-        hide=True).order_by('published')
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by('published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    context = {
-        'title': title,
-        'employer': employer,
-        'vacancies_hide': vacancies_hide,
-        'drafts': drafts,
-        'vacancies': vacancies,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
-    return render(request, 'employerapp/offers_list.html', context)
+class SearchResumeListView(LoginRequiredMixin, ListView):
+    paginate_by = 1
+    template_name = 'employerapp/search_resume.html'
 
-
-def company_profile(request, emp_id):
-    title = 'Профиль компании'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by('published')
-    context = {'title': title, 'employer': employer, 'vacancies': vacancies}
-
-    return render(request, 'employerapp/company_profile.html', context)
-
-
-@login_required
-def favorites_resume(request, emp_id):
-    title = 'Избранные резюме'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    vacancies = Vacancy.objects.filter(action='moderation_ok', hide=False,
-                                       employer=employer).order_by('published')
-    take_offers = SendResponse.objects.filter(vacancy__in=vacancies).select_related()
-    vacancies_all = Vacancy.objects.filter(Q(action='moderation_ok') | Q(
-        action='moderation_reject'), employer=employer).exclude(action='draft').exclude(
-        hide=True).order_by('published')
-    vacancies_hide = Vacancy.objects.filter(hide=True, employer=employer).order_by(
-        'published')
-    drafts = Vacancy.objects.filter(action='draft', hide=False, employer=employer).order_by('published')
-    offers = SendOffers.objects.filter(vacancy__employer=employer.pk).order_by('date')
-    favorites = FavoriteResumes.objects.filter(employer=employer).order_by('date')
-    context = {
-        'title': title,
-        'employer': employer,
-        'vacancies_hide': vacancies_hide,
-        'drafts': drafts,
-        'vacancies': vacancies,
-        'vacancies_all': vacancies_all,
-        'offers': offers,
-        'take_offers': take_offers,
-        'favorites': favorites
-    }
-
-    return render(request, 'employerapp/favorites.html', context)
-
-
-@login_required
-def delete_favorite(request, emp_id, pk):
-    title = 'Удаление избранных резюме'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    favorite = get_object_or_404(FavoriteResumes, pk=pk)
-
-    if request.method == 'POST':
-        favorite.delete()
-        return HttpResponseRedirect(reverse('employer:favorites', args=[employer.pk]))
-
-    context = {'title': title, 'favorite': favorite, 'employer': employer}
-
-    return render(request, 'employerapp/delete_favorite.html', context)
-
-
-@login_required
-def search_resume(request, emp_id):
-    title = 'Поиск резюме'
-    employer = get_object_or_404(Employer, pk=emp_id)
-    search = request.GET.get('search')
-    city = request.GET.get('city')
-    salary = request.GET.get('salary')
-    currency = request.GET.get('currency')
-    gender = request.GET.get('gender')
-    from_date = request.GET.get('from_date')
-    till_date = request.GET.get('till_date')
-    results = None
-    fav_resume = []
-    if search or city or gender or salary or from_date or till_date:
-        favorite_resumes = FavoriteResumes.objects.filter(employer=employer)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+        context['title'] = 'Поиск резюме'
+        context['employer'] = get_object_or_404(Employer, pk=self.kwargs['emp_id'])
+        context['fav_list'] = []
+        favorite_resumes = FavoriteResumes.objects.filter(employer=context['employer'])
         for item in favorite_resumes:
-            fav_resume.append(item.resume.position)
-    if search:
-        results = Resume.objects.filter(Q(position__icontains=search) | Q(skills__icontains=search)).filter(action='moderation_ok', hide=False).order_by('-published')
+            context['fav_list'].append(item.resume.position)
+        return context
 
-    if city:
-        if results:
-            results = results.filter(seeker__city=city)
-        else:
-            results = Resume.objects.filter(seeker__city=city, action='moderation_ok', hide=False).order_by('-published')
+    def get_queryset(self):
+        search = self.request.GET.get('search')
+        city = self.request.GET.get('city')
+        salary = self.request.GET.get('salary')
+        currency = self.request.GET.get('currency')
+        gender = self.request.GET.get('gender')
+        from_date = self.request.GET.get('from_date')
+        till_date = self.request.GET.get('till_date')
+        results = []
+        if search:
+            results = Resume.objects.filter(Q(position__icontains=search) |
+                                            Q(skills__icontains=search)).filter(action='moderation_ok',
+                                                                                hide=False).order_by('-published')
 
-    if gender == 'female' or gender == 'male':
-        if results:
-            results = results.filter(seeker__sex=gender)
-        else:
-            results = Resume.objects.filter(seeker__sex=gender, action='moderation_ok', hide=False).order_by('-published')
+        if city:
+            if results:
+                results = results.filter(seeker__city=city)
+            else:
+                results = Resume.objects.filter(seeker__city=city, action='moderation_ok',
+                                                hide=False).order_by('-published')
 
-    if salary:
-        if results:
-            results = results.filter(min_salary__lte=salary, currency=currency)
-        else:
-            results = Resume.objects.filter(min_salary__lte=salary, currency=currency, action='moderation_ok', hide=False).order_by('-published')
+        if gender == 'female' or gender == 'male':
+            if results:
+                results = results.filter(seeker__sex=gender)
+            else:
+                results = Resume.objects.filter(seeker__sex=gender, action='moderation_ok',
+                                                hide=False).order_by('-published')
 
-    if from_date:
-        if results:
-            results = results.filter(published__gte=from_date)
-        else:
-            results = Resume.objects.filter(published__gte=from_date, action='moderation_ok', hide=False).order_by('-published')
+        if salary:
+            if results:
+                results = results.filter(min_salary__lte=salary, currency=currency)
+            else:
+                results = Resume.objects.filter(min_salary__lte=salary, currency=currency,
+                                                action='moderation_ok', hide=False).order_by('-published')
 
-    if till_date:
-        if results:
-            results = results.filter(published__lte=till_date)
-        else:
-            results = Resume.objects.filter(published__lte=till_date, action='moderation_ok', hide=False).order_by('-published')
-    print('fav_resume_search = ', fav_resume)
-    page = request.GET.get('page')
-    paginator = Paginator(results, 1)
-    try:
-        search_paginator = paginator.page(page)
-    except PageNotAnInteger:
-        search_paginator = paginator.page(1)
-    except EmptyPage:
-        search_paginator = paginator.page(paginator.num_pages)
+        if from_date:
+            if results:
+                results = results.filter(published__gte=from_date)
+            else:
+                results = Resume.objects.filter(published__gte=from_date, action='moderation_ok',
+                                                hide=False).order_by('-published')
 
-    context = {'title': title, 'object_list': search_paginator, 'employer': employer, 'fav_list': fav_resume}
-
-    return render(request, 'employerapp/search_resume.html', context)
+        if till_date:
+            if results:
+                results = results.filter(published__lte=till_date)
+            else:
+                results = Resume.objects.filter(published__lte=till_date, action='moderation_ok',
+                                                hide=False).order_by('-published')
+        return results

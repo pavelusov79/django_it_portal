@@ -15,7 +15,6 @@ class VacancyForm(forms.ModelForm):
 
 @admin.register(Vacancy)
 class VacancyAdmin(admin.ModelAdmin):
-    list_display = ('vacancy_name', 'employer', 'action', 'is_active',)
+    list_display = ('vacancy_name', 'employer', 'action')
     list_filter = ('action', )
     form = VacancyForm
-

@@ -55,12 +55,12 @@ class Vacancy(models.Model):
     hide = models.BooleanField(verbose_name='вакансия удалена / скрыта', default=False)
     is_active = models.BooleanField(default=False)
     failed = models.BooleanField(default=False)
-    fall_moderation = models.TextField(verbose_name='Сообщение в случае непрохождения '
-            'модерации вакансии', max_length=254, blank=True, help_text='поле необязательное')
+    fall_moderation = models.TextField(verbose_name='Сообщение в случае непрохождения модерации вакансии',
+                                       max_length=254, blank=True, help_text='поле необязательное')
     is_favorite = models.BooleanField(verbose_name='добавлено в избранное', default=False)
 
     def __str__(self):
-        return f'{self.vacancy_name} ({self.employer.company_name})'
+        return self.vacancy_name
 
     class Meta:
         verbose_name_plural = 'Вакансии'
