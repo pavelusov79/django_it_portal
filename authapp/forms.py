@@ -76,10 +76,6 @@ class SeekerRegisterForm(UserCreationForm):
                  label='Ваш пол')
         self.fields['married'] = forms.ChoiceField(choices=blank_choice+Seeker.MARRIED_STATUS,
                 label='Ваше семейное положение')
-        # self.fields['skills'] = forms.CharField(widget=forms.Textarea(attrs={'rows': 5}), label='Ваши навыки',
-        #         required=False, max_length=264, help_text='Поле необязательно')
-        # self.fields['hobby'] = forms.CharField(widget=forms.Textarea(attrs={'rows': 5}), label='Ваши хобби',
-        #             required=False, max_length=264, help_text='Поле необязательно')
         self.fields['first_name'] = forms.CharField(label='Фамилия')
         self.fields['last_name'] = forms.CharField(label='Имя')
         self.fields['patronimyc'] = forms.CharField(label='Отчество')
