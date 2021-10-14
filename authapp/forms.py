@@ -21,21 +21,17 @@ class EmployerRegisterForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super(EmployerRegisterForm, self).__init__(*args, **kwargs)
-        self.fields['username'] = forms.CharField(label='Ваш логин на портале')
-        self.fields['password1'] = forms.CharField(label='Пароль', widget=forms.PasswordInput)
-        self.fields['password2'] = forms.CharField(label='Подтвердите пароль',
-                                                   widget=forms.PasswordInput)
-        self.fields['email'] = forms.EmailField(label='Ваш email')
-        self.fields['city'] = forms.CharField(label='Ваш город')
+        self.fields['email'] = forms.EmailField(label='Ваш email', required=True)
+        self.fields['city'] = forms.CharField(max_length=20, label='Ваш город')
         self.fields['tel'] = forms.CharField(label='Телефон компании', validators=[
                     RegexValidator(regex='^8[0-9]{10}$', message='Допускаются только цифры '
-                    'начиная с 8-ки, например 84952354422 или 89147900000.')])
+                                   'начиная с 8-ки, например 84952354422 или 89147900000.')])
         self.fields['web'] = forms.CharField(label='Вебсайт компании', help_text='Поле необязательно', required=False)
-        self.fields['short_description'] = forms.CharField(label='Краткое описание вашей '
-                                            'компании', widget=forms.Textarea(attrs={'rows': 5}))
+        self.fields['short_description'] = forms.CharField(label='Краткое описание вашей компании',
+                                                           widget=forms.Textarea(attrs={'rows': 5}))
         self.fields['logo'] = forms.ImageField(label='Ваш логотип', required=False,
                                                help_text='Поле необязательно')
-        self.fields['company_name'] = forms.CharField(label='Название вашей компании')
+        self.fields['company_name'] = forms.CharField(max_length=64, label='Название вашей компании')
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
@@ -64,20 +60,16 @@ class SeekerRegisterForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super(SeekerRegisterForm, self).__init__(*args, **kwargs)
         blank_choice = (('', '----------'),)
-        self.fields['username'] = forms.CharField(label='Ваш логин на портале')
-        self.fields['password1'] = forms.CharField(label='Пароль', widget=forms.PasswordInput)
-        self.fields['password2'] = forms.CharField(label='Подтвердите пароль', widget=forms.PasswordInput)
         self.fields['city'] = forms.CharField(label='Ваш город')
-        self.fields['email'] = forms.EmailField(label='Ваш email')
+        self.fields['email'] = forms.EmailField(label='Ваш email', required=True)
         self.fields['tel'] = forms.CharField(label='Контактный тел.', validators=[
                     RegexValidator(regex='^8[0-9]{10}$', message='Допускаются только цифры '
-                    'начиная с 8-ки, например 84952354422 или 89147900000.')])
-        self.fields['sex'] = forms.ChoiceField(choices=blank_choice+Seeker.SEX_CHOICE,
-                 label='Ваш пол')
+                                   'начиная с 8-ки, например 84952354422 или 89147900000.')])
+        self.fields['sex'] = forms.ChoiceField(choices=blank_choice+Seeker.SEX_CHOICE, label='Ваш пол')
         self.fields['married'] = forms.ChoiceField(choices=blank_choice+Seeker.MARRIED_STATUS,
-                label='Ваше семейное положение')
-        self.fields['first_name'] = forms.CharField(label='Фамилия')
-        self.fields['last_name'] = forms.CharField(label='Имя')
+                                                   label='Ваше семейное положение')
+        self.fields['first_name'] = forms.CharField(max_length=20, label='Фамилия', required=True)
+        self.fields['last_name'] = forms.CharField(max_length=20, label='Имя', required=True)
         self.fields['patronimyc'] = forms.CharField(label='Отчество')
         self.fields['photo'] = forms.ImageField(label='Ваше фото', required=False,
                                                 help_text='Поле необязательно')
@@ -120,8 +112,7 @@ class UserEditForm(UserChangeForm):
     def __init__(self, *args, **kwargs):
         super(UserEditForm, self).__init__(*args, **kwargs)
         self.fields.pop('password')
-        self.fields['username'] = forms.CharField(label='Логин')
-        self.fields['email'] = forms.EmailField(label='Ваш email')
+        self.fields['email'] = forms.EmailField(label='Ваш email', required=True)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
@@ -134,10 +125,9 @@ class UserSeekerEditForm(UserChangeForm):
     def __init__(self, *args, **kwargs):
         super(UserSeekerEditForm, self).__init__(*args, **kwargs)
         self.fields.pop('password')
-        self.fields['username'] = forms.CharField(label='Логин')
-        self.fields['first_name'] = forms.CharField(label='Фамилия')
-        self.fields['last_name'] = forms.CharField(label='Имя')
-        self.fields['email'] = forms.EmailField(label='Ваш email')
+        self.fields['first_name'] = forms.CharField(max_length=20, label='Фамилия', required=True)
+        self.fields['last_name'] = forms.CharField(max_length=20, label='Имя', required=True)
+        self.fields['email'] = forms.EmailField(label='Ваш email', required=True)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
